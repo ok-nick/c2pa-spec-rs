@@ -91,11 +91,14 @@ PDF:
 # Dublin Core
 Dublin_Core:
 - dc:coverage
+- dc:created
 - dc:date
 - dc:format
 - dc:identifier
 - dc:language
+- dc:modified
 - dc:relation
+- dc:title
 - dc:type
 
 # IPTC Core

@@ -157,8 +157,8 @@ pub enum ActionReason {
     C2paPiiPresent,
     #[serde(rename = "c2pa.invalid.data")]
     C2paInvalidData,
-    #[serde(rename = "c2pa.tradesecret.present")]
-    C2paTradesecretPresent,
+    #[serde(rename = "c2pa.trade-secret.present")]
+    C2paTradeSecretPresent,
     #[serde(rename = "c2pa.government.confidential")]
     C2paGovernmentConfidential,
     String(String),
@@ -257,6 +257,10 @@ pub struct ParametersMapV2 {
     /// A list of hashed JUMBF URI(s) to the ingredient (v2 or v3) assertion(s) that this action acts on
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ingredients: Option<Vec<HashedUriMap>>,
+    /// hashed JUMBF URI(s) to assertion(s) related to this action that are neither ingredients nor actions
+    #[serde(rename = "relatedAssertions")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub related_assertions: Option<Vec<HashedUriMap>>,
     /// BCP-47 code of the source language of a `c2pa.translated` action
     #[serde(rename = "sourceLanguage")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -289,6 +293,9 @@ pub struct OriginalPreservationImageRepresentation {
     #[serde(rename = "type")]
     pub type_: String,
     pub parameters: OriginalPreservationImageParams,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -301,6 +308,8 @@ pub struct OriginalPreservationImageParams {
     #[serde(rename = "embeddedOriginalPreservationImage")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embedded_original_preservation_image: Option<HashedUriMap>,
+    /// custom fields
+    pub entries: std::collections::HashMap<String, ciborium::Value>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -308,6 +317,9 @@ pub struct GenericRepresentation {
     #[serde(rename = "type")]
     pub type_: String,
     pub entries: std::collections::HashMap<String, std::collections::HashMap<String, ciborium::Value>>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
 }
 
 /// Describes additional information about an assertion, including a hashed-uri reference to it. We use a socket/plug here to allow hashed-uri-map to be used in individual files without having the map defined in the same file
@@ -335,6 +347,16 @@ pub struct AssertionMetadataMap {
     #[serde(rename = "regionOfInterest")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub region_of_interest: Option<RegionMap>,
+    /// RFC 3339 date-time when the process began (advisory, not a trusted timestamp)
+    #[serde(rename = "processStart")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub process_start: Option<String>,
+    /// RFC 3339 date-time when the process ended (advisory, not a trusted timestamp)
+    #[serde(rename = "processEnd")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub process_end: Option<String>,
+    /// custom fields
+    pub entries: std::collections::HashMap<String, ciborium::Value>,
 }
 
 /// the following two values of source-type are deprecated as of 2.0
@@ -429,9 +451,13 @@ pub type LanguageString = String;
 pub type AssertionMetadataAssertion = AssertionMetadataMap;
 
 /// The asset reference assertion (ARA) describes where a copy of the asset may be obtained.
+///
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct AssetRefMap {
     pub references: Vec<AraReferenceBlockMap>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -450,7 +476,62 @@ pub struct AraReferenceUriMap {
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
-pub enum TypeChoice {
+pub enum ModelTypeChoice {
+    #[serde(rename = "c2pa.types.model")]
+    C2paTypesModel,
+    #[serde(rename = "c2pa.types.model.caffe")]
+    C2paTypesModelCaffe,
+    #[serde(rename = "c2pa.types.model.caffe2")]
+    C2paTypesModelCaffe2,
+    #[serde(rename = "c2pa.types.model.catboost")]
+    C2paTypesModelCatboost,
+    #[serde(rename = "c2pa.types.model.coreml")]
+    C2paTypesModelCoreml,
+    #[serde(rename = "c2pa.types.model.flax")]
+    C2paTypesModelFlax,
+    #[serde(rename = "c2pa.types.model.huggingface.transformers")]
+    C2paTypesModelHuggingfaceTransformers,
+    #[serde(rename = "c2pa.types.model.jax")]
+    C2paTypesModelJax,
+    #[serde(rename = "c2pa.types.model.keras")]
+    C2paTypesModelKeras,
+    #[serde(rename = "c2pa.types.model.lightgbm")]
+    C2paTypesModelLightgbm,
+    #[serde(rename = "c2pa.types.model.ml_net")]
+    C2paTypesModelMlNet,
+    #[serde(rename = "c2pa.types.model.mxnet")]
+    C2paTypesModelMxnet,
+    #[serde(rename = "c2pa.types.model.onnx")]
+    C2paTypesModelOnnx,
+    #[serde(rename = "c2pa.types.model.openvino")]
+    C2paTypesModelOpenvino,
+    #[serde(rename = "c2pa.types.model.openvino.parameter")]
+    C2paTypesModelOpenvinoParameter,
+    #[serde(rename = "c2pa.types.model.openvino.topology")]
+    C2paTypesModelOpenvinoTopology,
+    #[serde(rename = "c2pa.types.model.paddle")]
+    C2paTypesModelPaddle,
+    #[serde(rename = "c2pa.types.model.pytorch")]
+    C2paTypesModelPytorch,
+    #[serde(rename = "c2pa.types.model.sklearn")]
+    C2paTypesModelSklearn,
+    #[serde(rename = "c2pa.types.model.tensorflow")]
+    C2paTypesModelTensorflow,
+    #[serde(rename = "c2pa.types.model.tensorrt")]
+    C2paTypesModelTensorrt,
+    #[serde(rename = "c2pa.types.model.tflite")]
+    C2paTypesModelTflite,
+    #[serde(rename = "c2pa.types.model.torchscript")]
+    C2paTypesModelTorchscript,
+    #[serde(rename = "c2pa.types.model.xgboost")]
+    C2paTypesModelXgboost,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum AssetTypeChoice {
+    #[serde(rename = "c2pa.types.audit-log")]
+    C2paTypesAuditLog,
     #[serde(rename = "c2pa.types.classifier")]
     C2paTypesClassifier,
     #[serde(rename = "c2pa.types.cluster")]
@@ -485,34 +566,15 @@ pub enum TypeChoice {
     C2paTypesGeneratorPrompt,
     #[serde(rename = "c2pa.types.generator.seed")]
     C2paTypesGeneratorSeed,
-    #[serde(rename = "c2pa.types.model")]
-    C2paTypesModel,
-    #[serde(rename = "c2pa.types.model.jax")]
-    C2paTypesModelJax,
-    #[serde(rename = "c2pa.types.model.keras")]
-    C2paTypesModelKeras,
-    #[serde(rename = "c2pa.types.model.ml_net")]
-    C2paTypesModelMlNet,
-    #[serde(rename = "c2pa.types.model.mxnet")]
-    C2paTypesModelMxnet,
-    #[serde(rename = "c2pa.types.model.onnx")]
-    C2paTypesModelOnnx,
-    #[serde(rename = "c2pa.types.model.openvino")]
-    C2paTypesModelOpenvino,
-    #[serde(rename = "c2pa.types.model.openvino.parameter")]
-    C2paTypesModelOpenvinoParameter,
-    #[serde(rename = "c2pa.types.model.openvino.topology")]
-    C2paTypesModelOpenvinoTopology,
-    #[serde(rename = "c2pa.types.model.pytorch")]
-    C2paTypesModelPytorch,
-    #[serde(rename = "c2pa.types.model.tensorflow")]
-    C2paTypesModelTensorflow,
     #[serde(rename = "c2pa.types.regressor")]
     C2paTypesRegressor,
     #[serde(rename = "c2pa.types.tensorflow.hubmodule")]
     C2paTypesTensorflowHubmodule,
     #[serde(rename = "c2pa.types.tensorflow.savedmodel")]
     C2paTypesTensorflowSavedmodel,
+    #[serde(rename = "c2pa.types.version-history")]
+    C2paTypesVersionHistory,
+    ModelTypeChoice(ModelTypeChoice),
     String(String),
 }
 
@@ -520,7 +582,7 @@ pub enum TypeChoice {
 pub struct AssetTypeMap {
     /// one of the listed choices or a custom value
     #[serde(rename = "type")]
-    pub type_: TypeChoice,
+    pub type_: AssetTypeChoice,
     /// The version of the asset type, if applicable. This is a SemVer formatted string.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<SemverString>,
@@ -719,7 +781,7 @@ pub struct ClaimMap {
     /// uniquely identifies a specific version of an asset
     #[serde(rename = "instanceID")]
     pub instance_id: String,
-    /// name of the asset,
+    /// name of the asset
     #[serde(rename = "dc:title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dc_title: Option<String>,
@@ -750,7 +812,7 @@ pub struct ClaimMapV2 {
     pub created_assertions: Vec<HashedUriMap>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gathered_assertions: Option<Vec<HashedUriMap>>,
-    /// name of the asset,
+    /// name of the asset (metadata assertion preferred)
     #[serde(rename = "dc:title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dc_title: Option<String>,
@@ -763,7 +825,7 @@ pub struct ClaimMapV2 {
     /// A string identifying the algorithm used to compute all soft binding assertions listed in this claim unless otherwise overridden, taken from the C2PA soft binding algorithm identifier registry."
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alg_soft: Option<String>,
-    /// The version of the specification used to produce this claim (SemVer)
+    /// (DEPRECATED) The version of the specification used to produce this claim (SemVer)
     #[serde(rename = "specVersion")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub spec_version: Option<SemverString>,
@@ -785,6 +847,10 @@ pub struct GeneratorInfoMap {
     /// A human readable string of the operating system the claim generator is running on
     #[serde(skip_serializing_if = "Option::is_none")]
     pub operating_system: Option<String>,
+    /// The version of the specification used to produce this manifest (SemVer)
+    #[serde(rename = "specVersion")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spec_version: Option<SemverString>,
     pub entries: std::collections::HashMap<String, ciborium::Value>,
 }
 
@@ -1049,6 +1115,31 @@ pub type SustainabilityMeasurementMethod = String;
 pub struct ExternalReferenceMap {
     /// specifies the location and type of the remote data
     pub location: UnhashedExtUriMap,
+    /// label for the referenced assertion, if relevant (e.g., c2pa.metadata)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    /// human-readable description of the referenced data
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
+}
+
+/// Assertion that references externally-stored data by hashed URI
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct HashedExternalReferenceMap {
+    /// specifies the location, type and hash of the remote data
+    pub location: HashedExtUriMap,
+    /// label for the referenced assertion, if relevant (e.g., c2pa.metadata)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    /// human-readable description of the referenced data
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
 }
 
 /// Multiple font actions work with respect to ranges of Unicode values.
@@ -1157,6 +1248,9 @@ pub struct FontInfoMap {
     /// Internal identier of font for foundry or vendor use.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier: Option<String>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
 }
 
 /// Font Formats
@@ -1292,6 +1386,7 @@ pub struct HashedUriMap {
     pub hash: Vec<u8>,
 }
 
+/// (DEPRECATED) Version 1 of the ingredient assertion
 /// Assertion that describes an ingredient used in the asset
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct IngredientMap {
@@ -1325,7 +1420,7 @@ pub struct IngredientMap {
     pub metadata: Option<AssertionMetadataMap>,
 }
 
-/// Version 2 (v2) of the ingredient assertion
+/// (DEPRECATED) Version 2 (v2) of the ingredient assertion
 /// Assertion that describes an ingredient used in the asset
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct IngredientMapV2 {
@@ -1428,6 +1523,10 @@ pub struct IngredientMapV3 {
     #[serde(rename = "softBindingAlgorithmsMatched")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub soft_binding_algorithms_matched: Option<Vec<String>>,
+    /// One of the source types defined at https://cv.iptc.org/newscodes/digitalsourcetype/ or in this specification. Cannot be combined with `activeManifest`.
+    #[serde(rename = "digitalSourceType")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub digital_source_type: Option<String>,
     /// additional information about the assertion
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<AssertionMetadataMap>,
@@ -1565,6 +1664,9 @@ pub struct SoftBindingMap {
     /// Unused and deprecated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
