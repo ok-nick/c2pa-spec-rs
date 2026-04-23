@@ -1,0 +1,12 @@
+; Data structure to supply session keys used for live-video validation
+session-keys-data = {
+    "keys" => [1* session-key],        ; one or more session keys 
+}
+
+session-key = {
+    "key" => COSE_Key,                ; session key used to sign the `verifiable-segment-info-map`, note: semantics need to require kid in COSE_Key
+    "minSequenceNumber" => uint     ; minimum sequence number that can be signed with this key
+    "createdAt" => #6.0(tstr),       ; CBOR tag 0 (RFC 3339 date-time)
+    "validityPeriod" => uint,         ; seconds from createdAt, key is valid for this period between createdAt and createdAt + validityPeriod
+    "signerBinding" => COSE_Sign1,       ; A signature of the Signer's end-entity certificate, using the session key `key`, enabling verification that the session key is associated with this Signer
+}

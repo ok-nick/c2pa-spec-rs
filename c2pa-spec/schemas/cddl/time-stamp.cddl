@@ -1,0 +1,8 @@
+; The data structures used to store an array of
+; manifest URNs to time-stamp "blobs"
+$time-stamp-map /= {
+  * $$time-stamp-entry => bstr
+}
+
+time-stamp-entry /= tstr .regexp "^urn:c2pa:[\\da-zA-Z_-]+$"
+
