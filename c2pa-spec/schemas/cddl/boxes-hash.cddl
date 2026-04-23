@@ -1,0 +1,22 @@
+box-map = {
+  "boxes": [1* box-hash-map],
+  ? "alg":tstr .size (1..max-tstr-length), ; A string identifying the cryptographic hash algorithm used to compute the hash in this assertion, taken from the C2PA hash algorithm identifier list. If this field is absent, the hash algorithm is taken the `alg` value of the enclosing structure. If both are present, the field in this structure is used. If no value is present in any of these places, this structure is invalid; there is no default.
+}
+
+box-hash-map = {
+  "names": [1* box-name], ; An array of strings representing the box identifiers in order of appearance (e.g., `APP0`, `IHDR`)
+  ? "alg": tstr .size (1..max-tstr-length), ; A string identifying the cryptographic hash algorithm used to compute the hash in this assertion, taken from the C2PA hash algorithm identifier list. If this field is absent, the hash algorithm is taken the `alg` value of the enclosing structure. If both are present, the field in this structure is used. If no value is present in any of these places, this structure is invalid; there is no default.
+  "hash": bstr, ; byte string of the hash value
+  ? "excluded": bool, ; A boolean value indicating whether a validator can ignore this box ( & associated hash) during validation. If this field is absent, the box is hashed and the values compared.
+  ? "exclusions": [1* box-exclusions-map], ; An array of hash exclusion ranges. Ranges have monotonically increasing `start` values, and no two ranges may overlap.
+  ? "pad": bstr, ; zero-filled byte string used for filling up space
+  ? "pad2": bstr, ; zero-filled byte string used for filling up space
+}
+
+box-name /= tstr .size (1..10)
+
+box-exclusions-map = {
+  "start": uint, ; Starting byte offset (from the start of the box) of the range
+  "length": uint, ; Number of bytes of data to exclude
+  ? "boxIndex": int, ; 0-based index into the names array in the box-hash-map. Can be omitted if the number of box is one.
+}

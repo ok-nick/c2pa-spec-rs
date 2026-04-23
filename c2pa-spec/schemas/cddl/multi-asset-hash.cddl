@@ -1,0 +1,21 @@
+multi-asset-hash-map = {
+  "parts": [* part-hash-map] ; An array of one or more hashes for individual parts of the multi-part file
+}
+
+byte-range-locator = (
+  "byteOffset": uint     ; The byte offset of the part within the file
+  "length": uint         ; The length of the part
+)
+
+; this is a special CDDL map of choices (meaning that only one of the following can be present)
+; The byte offset & length of the part within the file
+; An XPath to the BMFF box of the part
+locator-map = {
+  (byte-range-locator // "bmffBox": tstr)
+}
+
+part-hash-map = {
+  "location" : locator-map, ; The location of the part within the file
+  "hashAssertion": $hashed-uri-map, ; hashed_uri to the hash assertion of the part
+  ? "optional": bool, ; If the part is optional and can be discarded
+}

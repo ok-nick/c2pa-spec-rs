@@ -1,0 +1,154 @@
+; Validation codes
+
+; Success codes
+$status-code /= "assertion.accessible"
+$status-code /= "assertion.bmffHash.match"
+$status-code /= "assertion.boxesHash.match"
+$status-code /= "assertion.collectionHash.match"
+$status-code /= "assertion.dataHash.match"
+$status-code /= "assertion.hashedURI.match"
+$status-code /= "assertion.alternativeContentRepresentation.match"
+$status-code /= "assertion.multiAssetHash.match"
+$status-code /= "claimSignature.insideValidity"
+$status-code /= "claimSignature.validated"
+$status-code /= "ingredient.claimSignature.validated"
+$status-code /= "ingredient.manifest.validated"
+$status-code /= "signingCredential.ocsp.notRevoked"
+$status-code /= "signingCredential.trusted"
+$status-code /= "timeStamp.trusted"
+$status-code /= "timeStamp.validated"
+
+; Informational codes
+$status-code /= "algorithm.deprecated"
+$status-code /= "assertion.bmffHash.additionalExclusionsPresent"
+$status-code /= "assertion.boxesHash.additionalExclusionsPresent"
+$status-code /= "assertion.dataHash.additionalExclusionsPresent"
+$status-code /= "ingredient.unknownProvenance"
+$status-code /= "signingCredential.ocsp.inaccessible"
+$status-code /= "signingCredential.ocsp.skipped"
+$status-code /= "signingCredential.ocsp.unknown"
+$status-code /= "timeOfSigning.insideValidity"
+$status-code /= "timeOfSigning.outsideValidity"
+$status-code /= "timeStamp.credentialInvalid"
+$status-code /= "timeStamp.malformed"
+$status-code /= "timeStamp.mismatch"
+$status-code /= "timeStamp.outsideValidity"
+$status-code /= "timeStamp.untrusted"
+
+; Failure codes
+$status-code /= "algorithm.unsupported"
+$status-code /= "assertion.action.ingredientMismatch"
+$status-code /= "assertion.action.malformed"
+$status-code /= "assertion.action.redacted"
+$status-code /= "assertion.action.redactionMismatch"
+$status-code /= "assertion.action.softBindingMissing"
+$status-code /= "assertion.bmffHash.malformed"
+$status-code /= "assertion.bmffHash.mismatch"
+$status-code /= "assertion.boxesHash.malformed"
+$status-code /= "assertion.boxesHash.mismatch"
+$status-code /= "assertion.boxesHash.unknownBox"
+$status-code /= "assertion.cbor.invalid"
+$status-code /= "assertion.cloud-data.actions"
+$status-code /= "assertion.cloud-data.hardBinding"
+$status-code /= "assertion.cloud-data.malformed"
+$status-code /= "assertion.cloud-data.labelMismatch"
+$status-code /= "assertion.collectionHash.incorrectFileCount"
+$status-code /= "assertion.collectionHash.invalidURI"
+$status-code /= "assertion.collectionHash.malformed"
+$status-code /= "assertion.collectionHash.mismatch"
+$status-code /= "assertion.dataHash.malformed"
+$status-code /= "assertion.dataHash.mismatch"
+$status-code /= "assertion.dataHash.redacted"
+$status-code /= "assertion.external-reference.created"
+$status-code /= "assertion.external-reference.hashMismatch"
+$status-code /= "assertion.external-reference.labelMismatch"
+$status-code /= "assertion.external-reference.malformed"
+$status-code /= "assertion.hardBinding.redacted"
+$status-code /= "assertion.hashedURI.mismatch"
+$status-code /= "assertion.inaccessible"
+$status-code /= "assertion.ingredient.malformed"
+$status-code /= "assertion.json.invalid"
+$status-code /= "assertion.missing"
+$status-code /= "assertion.alternativeContentRepresentation.malformed"
+$status-code /= "assertion.alternativeContentRepresentation.hashMismatch"
+$status-code /= "assertion.alternativeContentRepresentation.missing"
+$status-code /= "assertion.multiAssetHash.malformed"
+$status-code /= "assertion.multiAssetHash.missingPart"
+$status-code /= "assertion.multiAssetHash.mismatch"
+$status-code /= "assertion.multipleHardBindings"
+$status-code /= "assertion.notRedacted"
+$status-code /= "assertion.outsideManifest"
+$status-code /= "assertion.selfRedacted"
+$status-code /= "assertion.timestamp.malformed"
+$status-code /= "assertion.undeclared"
+$status-code /= "claim.cbor.invalid"
+$status-code /= "claim.hardBindings.missing"
+$status-code /= "claim.malformed"
+$status-code /= "claim.missing"
+$status-code /= "claim.multiple"
+$status-code /= "claimSignature.missing"
+$status-code /= "claimSignature.mismatch"
+$status-code /= "claimSignature.outsideValidity"
+$status-code /= "general.error"
+$status-code /= "hashedURI.missing"
+$status-code /= "hashedURI.mismatch"
+$status-code /= "ingredient.claimSignature.missing"
+$status-code /= "ingredient.claimSignature.mismatch"
+$status-code /= "ingredient.manifest.missing"
+$status-code /= "ingredient.manifest.mismatch"
+$status-code /= "livevideo.assertion.invalid"
+$status-code /= "livevideo.continuityMethod.invalid"
+$status-code /= "livevideo.init.invalid"
+$status-code /= "livevideo.manifest.invalid"
+$status-code /= "livevideo.segment.invalid"
+$status-code /= "livevideo.sessionkey.invalid"
+$status-code /= "manifest.compressed.invalid"
+$status-code /= "manifest.html.multipleManifests"
+$status-code /= "manifest.inaccessible"
+$status-code /= "manifest.multipleParents"
+$status-code /= "manifest.structuredText.emptyReference"
+$status-code /= "manifest.structuredText.malformedReference"
+$status-code /= "manifest.structuredText.multipleReferences"
+$status-code /= "manifest.structuredText.noManifest"
+$status-code /= "manifest.structuredText.noResolutionPath"
+$status-code /= "manifest.timestamp.invalid"
+$status-code /= "manifest.timestamp.wrongParents"
+$status-code /= "manifest.update.invalid"
+$status-code /= "manifest.update.wrongParents"
+$status-code /= "signingCredential.invalid"
+$status-code /= "signingCredential.ocsp.revoked"
+$status-code /= "signingCredential.untrusted"
+
+; custom status codes
+$status-code /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+"
+
+status-map = {
+  "code": $status-code,         ; A label-formatted string that describes the status
+  ? "url": jumbf-uri-type,     ; JUMBF URI reference to the JUMBF box to which this status code applies
+  ? "explanation": tstr .size (1..max-tstr-length), ; A human readable string explaining the status
+  ? "success": bool             ; DEPRECATED. Does the code reflect success (true) or failure (false)
+}
+
+status-codes-map = {
+    "success": [* $status-map],          ; an array of validation success codes. May be empty.
+    "informational": [* $status-map],    ; an array of validation informational codes. May be empty.
+    "failure": [* $status-map]           ; an array of validation failure codes. May be empty.
+}
+
+; Objects containing validation results for a manifest and its ingredients
+
+; Definition of a SemVer formatted regex (used in a few places)
+semver-string = tstr .regexp "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" ; Matches a SemVer version string.
+
+validation-results-map = {
+    ? "activeManifest": $status-codes-map, ; Validation status codes for the ingredient's active manifest. Present if ingredient is a C2PA asset. Not present if the ingredient is not a C2PA asset.
+    ? "ingredientDeltas": [* $ingredient-delta-validation-result-map], ; List of any changes/deltas between the current and previous validation results for each ingredient's manifest. Present if the the ingredient is a C2PA asset.
+    ? "specVersion": semver-string, ; The version of the specification against which the validation was performed (SemVer formatted string)
+    ? "trustListUri": tstr .size (1..max-tstr-length) ; URI to the trust list that was used to validate certificates
+}
+
+ingredient-delta-validation-result-map = {
+    "ingredientAssertionURI": jumbf-uri-type,  ; JUMBF URI reference to the ingredient assertion 
+    "validationDeltas": $status-codes-map       ; Validation results for the ingredient's active manifest
+}
+
