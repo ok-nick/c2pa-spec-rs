@@ -1,0 +1,4 @@
+certificate-status-map = {
+  "ocspVals": [1* bstr] 
+}
+

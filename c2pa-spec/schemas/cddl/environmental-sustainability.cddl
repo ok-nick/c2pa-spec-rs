@@ -1,0 +1,17 @@
+; The environmental sustainability assertion describes sustainability measurements
+; associated with the creation or modification of an asset.
+
+environmental-sustainability-map = {
+  ? "energy_kwh": environmental-sustainability-measurement-map,
+  ? "carbon_kgco2e": environmental-sustainability-measurement-map,
+  ? "water_litres": environmental-sustainability-measurement-map,
+  ? "metadata": $assertion-metadata-map,
+  * tstr => any    ; allow for any other custom use case
+}
+
+environmental-sustainability-measurement-map = {
+  "value": float .ge 0,
+  ? "measurementMethod": $sustainability-measurement-method
+}
+
+$sustainability-measurement-method /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+"

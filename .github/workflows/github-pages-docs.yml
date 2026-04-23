@@ -1,0 +1,60 @@
+name: GitHub Pages docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build rustdoc
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+        run: cargo doc --no-deps --workspace
+
+      - name: Add index redirect
+        run: |
+          cat > target/doc/index.html <<'EOF'
+          <!DOCTYPE html>
+          <meta http-equiv="refresh" content="0; url=c2pa_spec/index.html">
+          <title>c2pa-spec-rs docs</title>
+          <a href="c2pa_spec/index.html">Redirecting to c2pa_spec…</a>
+          EOF
+
+      - name: Upload rustdoc artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdoc
+          path: target/doc
+          retention-days: 14
+
+      - name: Deploy to gh-pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "docs: deploy ${{ github.sha }}"

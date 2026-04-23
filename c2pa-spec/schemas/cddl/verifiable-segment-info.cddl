@@ -1,0 +1,12 @@
+verifiable-segment-info = COSE_Sign1_Tagged
+; The protected header contains the signature algorithm ('alg')
+;  and optionally the "claimed time of signing" ('iat').
+; The unprotected header contains the the identifier of the session key ('kid').
+; The payload is set to the CBOR serialized `segment-info-map`.
+
+segment-info-map = {
+    "sequenceNumber" => uint,               ; monotonically increasing sequence number for each segment
+    "bmffHash" => bmff-hash-map,            ; C2PA c2pa.hash.bmff.v3
+    "manifestId" => tstr,                   ; shall be as described in <<manifest-identifier>>
+    ? "manifestUri" => hashed-ext-uri-map   ; optional hashed-ext-uri-map to where manifest can be retrieved
+}

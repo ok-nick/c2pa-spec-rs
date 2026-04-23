@@ -1,0 +1,57 @@
+; Assertion that describes an ingredient used in the asset
+ingredient-map = {
+  "dc:title": tstr, ; name of the ingredient
+  "dc:format": format-string, ; Media Type of the ingredient
+  ? "documentID": tstr, ; value of the ingredient's `xmpMM:DocumentID`
+  "instanceID": tstr, ; unique identifier, such as the value of the ingredient's `xmpMM:InstanceID`
+  "relationship": $relation-choice, ; The relationship of this ingredient to the asset it is an ingredient of.
+  ? "c2pa_manifest": $hashed-uri-map, ; hashed_uri reference to the C2PA Manifest of the ingredient
+  ? "thumbnail": $hashed-uri-map, ; hashed_uri reference to an ingredient thumbnail
+  ? "validationStatus": [1* $status-map] ; validation status of the ingredient
+  ? "metadata": $assertion-metadata-map ; additional information about the assertion
+}
+
+; Version 2 (v2) of the ingredient assertion
+; Assertion that describes an ingredient used in the asset
+ingredient-map-v2 = {
+  "dc:title": tstr, ; name of the ingredient
+  "dc:format": format-string, ; Media Type of the ingredient
+  "relationship": $relation-choice, ; The relationship of this ingredient to the asset it is an ingredient of.
+  ? "documentID": tstr, ; value of the ingredient's `xmpMM:DocumentID`
+  ? "instanceID": tstr, ; unique identifier, such as the value of the ingredient's `xmpMM:InstanceID`
+  ? "data" : $hashed-uri-map / $hashed-ext-uri-map, ; hashed_uri reference to an embedded data assertion or a hashed_ext_uri to external data
+  ? "data_types": [1* $asset-type-map],  ; additional information about the data's type to the ingredient V2 structure.
+  ? "c2pa_manifest": $hashed-uri-map, ; hashed_uri reference to the C2PA Manifest of the ingredient
+  ? "thumbnail": $hashed-uri-map, ; hashed_uri reference to a thumbnail in a embedded data assertion
+  ? "validationStatus": [1* $status-map] ; validation status of the ingredient
+  ? "description": tstr .size (1..max-tstr-length) ; Additional description of the ingredient
+  ? "informational_URI": tstr .size (1..max-tstr-length) ; URI to an informational page about the ingredient or its data
+  ? "metadata": $assertion-metadata-map ; additional information about the assertion
+}
+
+; Version 3 (v3) of the ingredient assertion
+; Assertion that describes an ingredient used in the asset
+ingredient-map-v3 = {
+  ? "dc:title": tstr, ; name of the ingredient
+  ? "dc:format": format-string, ; Media Type of the ingredient
+  "relationship": $relation-choice, ; The relationship of this ingredient to the asset it is an ingredient of.
+  ? "validationResults": $validation-results-map, ; Results from the claim generator performing full validation on the ingredient asset
+  ? "instanceID": tstr, ; unique identifier such as the value of the ingredient's `xmpMM:InstanceID`
+  ? "data" : $hashed-uri-map / $hashed-ext-uri-map, ; hashed_uri reference to an embedded data assertion or a hashed_ext_uri to external data
+  ? "dataTypes": [1* $asset-type-map],  ; additional information about the data's type to the ingredient V3 structure
+  ? "activeManifest": $hashed-uri-map, ; hashed_uri to the box corresponding to the active manifest of the ingredient
+  ? "claimSignature": $hashed-uri-map, ; hashed_uri to the Claim Signature box in the C2PA Manifest of the ingredient
+  ? "thumbnail": $hashed-uri-map, ; hashed_uri reference to a thumbnail in a embedded data assertion
+  ? "description": tstr .size (1..max-tstr-length), ; Additional description of the ingredient
+  ? "informationalURI": tstr .size (1..max-tstr-length), ; URI to an informational page about the ingredient or its data
+  ? "softBindingsMatched": bool, ; Whether soft bindings were matched
+  ? "softBindingAlgorithmsMatched": [1* tstr] ; Array of algorithm names used for discovering the active manifest
+  ? "metadata": $assertion-metadata-map ; additional information about the assertion
+}
+
+format-string = tstr .regexp "^\\w+\/[-+.\\w]+$"
+
+; Choices that describe the reason for how the ingredient is related to the asset
+$relation-choice /= "parentOf"
+$relation-choice /= "componentOf"
+$relation-choice /= "inputTo"

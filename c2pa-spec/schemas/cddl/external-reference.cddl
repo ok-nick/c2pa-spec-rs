@@ -1,0 +1,4 @@
+; Assertion that references assertion data stored externally by URI (no hash)
+external-reference-map = {
+  "location": unhashed-ext-uri-map,   ; specifies the location and type of the remote data
+}
