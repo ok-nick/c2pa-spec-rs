@@ -59,10 +59,6 @@ $status-code /= "assertion.collectionHash.mismatch"
 $status-code /= "assertion.dataHash.malformed"
 $status-code /= "assertion.dataHash.mismatch"
 $status-code /= "assertion.dataHash.redacted"
-$status-code /= "assertion.external-reference.created"
-$status-code /= "assertion.external-reference.hashMismatch"
-$status-code /= "assertion.external-reference.labelMismatch"
-$status-code /= "assertion.external-reference.malformed"
 $status-code /= "assertion.hardBinding.redacted"
 $status-code /= "assertion.hashedURI.mismatch"
 $status-code /= "assertion.inaccessible"
@@ -103,14 +99,8 @@ $status-code /= "livevideo.manifest.invalid"
 $status-code /= "livevideo.segment.invalid"
 $status-code /= "livevideo.sessionkey.invalid"
 $status-code /= "manifest.compressed.invalid"
-$status-code /= "manifest.html.multipleManifests"
 $status-code /= "manifest.inaccessible"
 $status-code /= "manifest.multipleParents"
-$status-code /= "manifest.structuredText.emptyReference"
-$status-code /= "manifest.structuredText.malformedReference"
-$status-code /= "manifest.structuredText.multipleReferences"
-$status-code /= "manifest.structuredText.noManifest"
-$status-code /= "manifest.structuredText.noResolutionPath"
 $status-code /= "manifest.timestamp.invalid"
 $status-code /= "manifest.timestamp.wrongParents"
 $status-code /= "manifest.update.invalid"
@@ -138,7 +128,7 @@ status-codes-map = {
 ; Objects containing validation results for a manifest and its ingredients
 
 ; Definition of a SemVer formatted regex (used in a few places)
-semver-string = tstr .regexp "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" ; Matches a SemVer version string.
+semver-string /= tstr .regexp "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$" ; Matches a SemVer version string.
 
 validation-results-map = {
     ? "activeManifest": $status-codes-map, ; Validation status codes for the ingredient's active manifest. Present if ingredient is a C2PA asset. Not present if the ingredient is not a C2PA asset.

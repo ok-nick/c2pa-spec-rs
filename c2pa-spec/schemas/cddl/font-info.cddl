@@ -18,7 +18,6 @@ font-info-map = {
   ? "designFoundry": font-entity-map, ; The foundry that designed the font.
   ? "sourceFoundry": font-entity-map, ; The foundry that distributes the font.
   ? "identifier": tstr, ; Internal identier of font for foundry or vendor use.
-  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 ; Font Formats

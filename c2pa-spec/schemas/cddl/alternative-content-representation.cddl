@@ -8,17 +8,14 @@ alternative-content-representation =
 original-preservation-image-representation = {
   "type": "exif.originalPreservationImage",
   "parameters": original-preservation-image-params
-  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 original-preservation-image-params = {
   ? "multiAssetPartIndex": uint ; The zero-based index of the element within the parts array of the corresponding c2pa.hash.multi-asset assertion that uniquely identifies the location of the OPI.
   ? "embeddedOriginalPreservationImage": hashed-uri-map, ; hashed URI reference to the embedded data assertion containing OPI, or to another assertion that is technically equivalent to an embedded data assertion (e.g., c2pa.thumbnail.claim).
-  * tstr => any ; custom fields
 }
 
 generic-representation = {
   "type": tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+",
   "parameters": { * tstr => any }
-  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }

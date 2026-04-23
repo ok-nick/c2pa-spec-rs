@@ -11,7 +11,6 @@ soft-binding-map = {
   ? "alg-params": bstr, ; (optional) CBOR byte string describing parameters of the soft binding algorithm. 
   ? "bindingMetadata": soft-binding-metadata-map, ; (optional) Additional metadata of the soft binding. Useful for binding-specific information
   ? "url": uri, ; Unused and deprecated. 
-  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 soft-binding-block-map = {

@@ -1,7 +1,7 @@
 ; The data structure used to store a reference to an external URI WITHOUT a hash. 
 ; This might include, for example, http/https reference or URI reference to a smart 
 ; contract under CAIP-10 convention  
-unhashed-ext-uri-map = {
+$unhashed-ext-uri-map /= {
   "url": tstr, ; URI reference
   ? "dc:format": format-string, ; IANA media type of the data
   ? "size": size-type, ; Number of bytes of data

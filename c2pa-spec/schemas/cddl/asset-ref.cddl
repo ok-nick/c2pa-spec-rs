@@ -1,8 +1,6 @@
 ;The asset reference assertion (ARA) describes where a copy of the asset may be obtained.
-;
 asset-ref-map = {
   "references": [1* ara-reference-block-map]
-  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 ara-reference-block-map = {

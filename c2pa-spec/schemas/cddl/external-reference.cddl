@@ -1,15 +1,4 @@
 ; Assertion that references assertion data stored externally by URI (no hash)
 external-reference-map = {
-  "location": $unhashed-ext-uri-map,   ; specifies the location and type of the remote data
-  ? "label": tstr, ; label for the referenced assertion, if relevant (e.g., c2pa.metadata)
-  ? "description": tstr .size (1..max-tstr-length), ; human-readable description of the referenced data
-  ? "metadata": $assertion-metadata-map,  ; additional information about the assertion
-}
-
-; Assertion that references externally-stored data by hashed URI
-hashed-external-reference-map = {
-  "location": $hashed-ext-uri-map,   ; specifies the location, type and hash of the remote data
-  ? "label": tstr, ; label for the referenced assertion, if relevant (e.g., c2pa.metadata)
-  ? "description": tstr .size (1..max-tstr-length), ; human-readable description of the referenced data
-  ? "metadata": $assertion-metadata-map,  ; additional information about the assertion
+  "location": unhashed-ext-uri-map,   ; specifies the location and type of the remote data
 }
