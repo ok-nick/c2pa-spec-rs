@@ -1,0 +1,103 @@
+name: Refresh C2PA spec
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Schemas bundle URL (leave empty to use the latest default)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Refresh spec
+        id: refresh
+        env:
+          SPEC_URL: ${{ inputs.url }}
+        run: |
+          set -euo pipefail
+          if [ -n "$SPEC_URL" ]; then
+            output=$(cargo run -p c2pa-spec-codegen -- --download --url "$SPEC_URL" 2>&1)
+          else
+            output=$(cargo run -p c2pa-spec-codegen -- --download 2>&1)
+          fi
+          # Re-emit for the job log so the output is still visible.
+          printf '%s\n' "$output"
+          old=$(printf '%s\n' "$output" | grep -oE 'old_spec_version=[^[:space:]]+' | tail -1 | cut -d= -f2 || true)
+          new=$(printf '%s\n' "$output" | grep -oE 'new_spec_version=[^[:space:]]+' | tail -1 | cut -d= -f2 || true)
+          echo "old=${old:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "new=${new:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: Compose PR title
+        id: title
+        env:
+          OLD: ${{ steps.refresh.outputs.old }}
+          NEW: ${{ steps.refresh.outputs.new }}
+        run: |
+          if [ "$OLD" = "$NEW" ]; then
+            title="update: refresh C2PA spec (still on $NEW)"
+          else
+            title="update: C2PA spec $OLD → $NEW"
+          fi
+          echo "value=$title" >> "$GITHUB_OUTPUT"
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "No schema changes detected."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Files changed:"
+            git diff --name-only
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify build and tests
+        if: steps.diff.outputs.changed == 'true'
+        id: verify
+        continue-on-error: true
+        run: cargo test --workspace
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: ${{ steps.title.outputs.value }}
+          title: ${{ steps.title.outputs.value }}
+          body: |
+            Nightly refresh of the committed CDDL, YAML, and ABNF schemas plus the
+            regenerated Rust sources, produced by running:
+
+            ```
+            cargo run -p c2pa-spec-codegen -- --download
+            ```
+
+            Spec version on this branch before refresh: **${{ steps.refresh.outputs.old }}**
+            Spec version after refresh: **${{ steps.refresh.outputs.new }}**
+
+            `cargo test --workspace` on this branch: **${{ steps.verify.outcome }}**.
+
+            Review the diff for upstream spec changes, confirm the regenerated types
+            still round-trip against real manifests, and merge if CI is green.
+          branch: auto/refresh-spec
+          delete-branch: true
+          labels: spec-refresh

@@ -1,0 +1,28 @@
+c2pa_urn = c2pa-namespace UUID [claim-generator [version-reason]]
+
+c2pa-namespace = "urn:c2pa:"
+
+; this definition is taken from RFC 9562
+UUID     =  4hexOctet "-"
+			2hexOctet "-"
+			2hexOctet "-"
+			2hexOctet "-"
+			6hexOctet
+hexOctet = HEXDIG HEXDIG
+DIGIT    = %x30-39
+HEXDIG   = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+
+; ASCII, but not Control Characters or Graphic Characters
+visible-char-except-space = %x21-7E / %x80-FF
+
+; claim-generator-identifier is a string of 0 to 32 visible-char-except-space characters
+; this means that an empty string is valid
+claim-generator = ":" claim-generator-identifier
+claim-generator-identifier = 0*32visible-char-except-space
+
+; version-reason is a string consisting of a positive integer 
+; followed by an underscore and a positive integer
+version-reason = ":" version "_" reason
+version = 1*DIGIT
+reason = 1*DIGIT
+

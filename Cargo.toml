@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = ["c2pa-spec", "c2pa-spec-codegen"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/ok-nick/c2pa-spec-rs"
