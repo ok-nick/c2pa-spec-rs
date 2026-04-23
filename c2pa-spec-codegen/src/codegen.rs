@@ -977,7 +977,10 @@ fn type2_to_rust_string(type2: &Type2<'_>) -> Result<String, CodegenError> {
     Type2::UintValue { .. } => Ok("u64".to_string()),
     Type2::FloatValue { .. } => Ok("f64".to_string()),
     Type2::UTF8ByteString { .. } | Type2::B16ByteString { .. } | Type2::B64ByteString { .. } => {
-      Ok("Vec<u8>".to_string())
+      // CDDL byte strings -> CBOR major type 2. `serde_bytes::ByteBuf`
+      // wraps a `Vec<u8>` and serializes as a byte string; a raw
+      // `Vec<u8>` would encode as a CBOR array of `u8`s.
+      Ok("serde_bytes::ByteBuf".to_string())
     }
     Type2::ParenthesizedType { pt, .. } => type_to_rust_string(pt),
     Type2::Unwrap { ident, .. } => Ok(to_pascal_case(ident.ident)),
@@ -1096,7 +1099,7 @@ fn cddl_ident_to_rust_type(ident: &str) -> String {
     "float16" | "float32" | "float64" | "float16-32" | "float32-64" | "float" => "f64".to_string(),
     "number" => "f64".to_string(),
     "tstr" | "text" => "String".to_string(),
-    "bstr" | "bytes" => "Vec<u8>".to_string(),
+    "bstr" | "bytes" => "serde_bytes::ByteBuf".to_string(),
     "null" | "nil" => "()".to_string(),
     "any" => "ciborium::Value".to_string(),
     "undefined" => "()".to_string(),
@@ -1105,7 +1108,7 @@ fn cddl_ident_to_rust_type(ident: &str) -> String {
     "uri" => "String".to_string(),
     "b64url" | "b64legacy" => "String".to_string(),
     "regexp" => "String".to_string(),
-    "biguint" | "bignint" | "bigint" => "Vec<u8>".to_string(),
+    "biguint" | "bignint" | "bigint" => "serde_bytes::ByteBuf".to_string(),
     _ => to_pascal_case(ident),
   }
 }
@@ -1114,7 +1117,7 @@ fn major_type_to_rust(mt: u8) -> String {
   match mt {
     0 => "u64".to_string(),
     1 => "i64".to_string(),
-    2 => "Vec<u8>".to_string(),
+    2 => "serde_bytes::ByteBuf".to_string(),
     3 => "String".to_string(),
     4 => "Vec<ciborium::Value>".to_string(),
     5 => "std::collections::HashMap<String, ciborium::Value>".to_string(),

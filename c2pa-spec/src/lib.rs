@@ -60,6 +60,9 @@
 //! [schemas-zip]: https://spec.c2pa.org/specifications/specifications/2.4/specs/_attachments/C2PA_Schemas.zip
 //! [`ciborium`]: https://docs.rs/ciborium
 
+pub use ciborium::Value;
+pub use serde_bytes::ByteBuf;
+
 pub type RegionMap = ciborium::Value;
 pub type CoseKey = ciborium::Value;
 pub type CoseSign1 = ciborium::Value;

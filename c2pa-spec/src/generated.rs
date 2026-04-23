@@ -110,7 +110,7 @@ pub enum ActionChoice {
     String(String),
 }
 
-pub type Buuid = Vec<u8>;
+pub type Buuid = serde_bytes::ByteBuf;
 
 /// NOTE: an earlier version of this specification also included an "actors" field, however this was removed in version 2.0.
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -548,7 +548,7 @@ pub struct BmffHashMap {
     pub alg: Option<String>,
     /// For non-fragmented MP4, this is the hash of the entire BMFF file excluding boxes listed in the exclusions array.  For fragmented MP4 (live or VOD), this field is the hash of the segment excluding boxes listed in the exclusions array.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hash: Option<Vec<u8>>,
+    pub hash: Option<serde_bytes::ByteBuf>,
     /// A set of Merkle tree rows and the associated data required to enable verification of a single 'mdat' box, multiple 'mdat' boxes, and/or individual fragment files within the asset.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub merkle: Option<Vec<MerkleMap>>,
@@ -565,7 +565,7 @@ pub struct BmffHashMap {
 }
 
 /// (optional) CBOR byte string of exactly 3 bytes.
-pub type FlagType = Vec<u8>;
+pub type FlagType = serde_bytes::ByteBuf;
 
 pub type FlagT = FlagType;
 
@@ -596,7 +596,7 @@ pub struct ExclusionsMap {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct DataMap {
     pub offset: u64,
-    pub value: Vec<u8>,
+    pub value: serde_bytes::ByteBuf,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -623,9 +623,9 @@ pub struct MerkleMap {
     /// For fragmented MP4 assets that are split across multiple files, this field is required to be present and is the hash of the entire initialization segment file for chunks hashed by this Merkle tree excluding boxes listed in the exclusions array.  For fragmented MP4 assets that are stored as a single flat MP4 file, this field is required to be present and is the hash of all bytes preceding the first 'moof' box excluding boxes listed in the exclusions array.  For non-fragmented MP4, this field is required to be absent.
     #[serde(rename = "initHash")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub init_hash: Option<Vec<u8>>,
+    pub init_hash: Option<serde_bytes::ByteBuf>,
     /// An ordered array representing a single row of the Merkle tree, which may be the leaf-most row, root row, or any intermediate row. Any null nodes are excluded. The depth of the row is implied by (is computed from) the number of items in this array.
-    pub hashes: Vec<Vec<u8>>,
+    pub hashes: Vec<serde_bytes::ByteBuf>,
     /// For non-fragmented MP4 assets where the mdat box is validated piecewise, this field can be present. This field is the non-negative size in bytes of a given leaf node in the Merkle tree. For fragmented MP4, this field is not present.
     #[serde(rename = "fixedBlockSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -650,7 +650,7 @@ pub struct BmffMerkleMap {
     pub location: i64,
     /// An ordered array representing the set of additional hashes required to reach a hash in the Merkle tree specified in the manifest from leaf-most (peer of this node) to root-most (child of node in manifest).  Note that this array may not be present, e.g. if the manifest itself contains the leaf-most row of the Merkle tree.  Null hashes are not included in this array.  The algorithm used is determined using the `alg` field from the corresponding entry in the `merkle` field array in the BMFF hash structure.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hashes: Option<Vec<Vec<u8>>>,
+    pub hashes: Option<Vec<serde_bytes::ByteBuf>>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -669,7 +669,7 @@ pub struct BoxHashMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alg: Option<String>,
     /// byte string of the hash value
-    pub hash: Vec<u8>,
+    pub hash: serde_bytes::ByteBuf,
     /// A boolean value indicating whether a validator can ignore this box ( & associated hash) during validation. If this field is absent, the box is hashed and the values compared.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub excluded: Option<bool>,
@@ -678,10 +678,10 @@ pub struct BoxHashMap {
     pub exclusions: Option<Vec<BoxExclusionsMap>>,
     /// zero-filled byte string used for filling up space
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pad: Option<Vec<u8>>,
+    pub pad: Option<serde_bytes::ByteBuf>,
     /// zero-filled byte string used for filling up space
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pad2: Option<Vec<u8>>,
+    pub pad2: Option<serde_bytes::ByteBuf>,
 }
 
 pub type BoxName = String;
@@ -701,7 +701,7 @@ pub struct BoxExclusionsMap {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct CertificateStatusMap {
     #[serde(rename = "ocspVals")]
-    pub ocsp_vals: Vec<Vec<u8>>,
+    pub ocsp_vals: Vec<serde_bytes::ByteBuf>,
 }
 
 /// CDDL schema for a claim map in C2PA
@@ -815,7 +815,7 @@ pub struct CollectionDataHashMap {
     /// A string identifying the cryptographic hash algorithm used to compute the hash on each entry of the `uris` array, taken from the C2PA hash algorithm identifier list.
     pub alg: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip_central_directory_hash: Option<Vec<u8>>,
+    pub zip_central_directory_hash: Option<serde_bytes::ByteBuf>,
 }
 
 /// The data structure used to store a reference to a URI and its hash.
@@ -824,7 +824,7 @@ pub struct UriHashedDataMap {
     /// relative URI reference
     pub uri: RelativeUrlType,
     ///  byte string containing the hash value
-    pub hash: Vec<u8>,
+    pub hash: serde_bytes::ByteBuf,
     /// Number of bytes of data
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<SizeType>,
@@ -846,7 +846,7 @@ pub struct DataBoxMap {
     #[serde(rename = "dc:format")]
     pub dc_format: FormatString,
     /// arbitrary text/binary data
-    pub data: Vec<u8>,
+    pub data: serde_bytes::ByteBuf,
     /// additional information about the data's type
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_types: Option<Vec<AssetTypeMap>>,
@@ -864,12 +864,12 @@ pub struct DataHashMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alg: Option<String>,
     /// byte string of the hash value
-    pub hash: Vec<u8>,
+    pub hash: serde_bytes::ByteBuf,
     /// zero-filled byte string used for filling up space
-    pub pad: Vec<u8>,
+    pub pad: serde_bytes::ByteBuf,
     /// zero-filled byte string used for filling up space
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pad2: Option<Vec<u8>>,
+    pub pad2: Option<serde_bytes::ByteBuf>,
     /// (optional) a human-readable description of what this hash cover
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -1264,7 +1264,7 @@ pub struct HashedExtUriMap {
     /// A string identifying the cryptographic hash algorithm used to compute the hash on this URI's data, taken from the C2PA hash algorithm identifier list. Unlike alg fields in other types, this field is mandatory here.
     pub alg: String,
     ///  byte string containing the hash value
-    pub hash: Vec<u8>,
+    pub hash: serde_bytes::ByteBuf,
     /// IANA media type of the data
     #[serde(rename = "dc:format")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1289,7 +1289,7 @@ pub struct HashedUriMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alg: Option<String>,
     ///  byte string containing the hash value
-    pub hash: Vec<u8>,
+    pub hash: serde_bytes::ByteBuf,
 }
 
 /// Assertion that describes an ingredient used in the asset
@@ -1515,7 +1515,7 @@ pub struct PartHashMap {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct RVals {
     #[serde(rename = "ocspVals")]
-    pub ocsp_vals: Vec<Vec<u8>>,
+    pub ocsp_vals: Vec<serde_bytes::ByteBuf>,
 }
 
 /// Data structure to supply session keys used for live-video validation
@@ -1547,17 +1547,17 @@ pub struct SoftBindingMap {
     pub blocks: Vec<SoftBindingBlockMap>,
     /// zero-filled byte string used for filling up space
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pad: Option<Vec<u8>>,
+    pub pad: Option<serde_bytes::ByteBuf>,
     /// zero-filled byte string used for filling up space
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pad2: Option<Vec<u8>>,
+    pub pad2: Option<serde_bytes::ByteBuf>,
     /// (optional) a human-readable description of what this hash covers
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// (optional) CBOR byte string describing parameters of the soft binding algorithm.
     #[serde(rename = "alg-params")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub alg_params: Option<Vec<u8>>,
+    pub alg_params: Option<serde_bytes::ByteBuf>,
     /// (optional) Additional metadata of the soft binding. Useful for binding-specific information
     #[serde(rename = "bindingMetadata")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1571,14 +1571,14 @@ pub struct SoftBindingMap {
 pub struct SoftBindingBlockMap {
     pub scope: SoftBindingScopeMap,
     /// CBOR byte string describing, in algorithm specific format, the value of the soft binding computed over this block of digital content"
-    pub value: Vec<u8>,
+    pub value: serde_bytes::ByteBuf,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct SoftBindingScopeMap {
     /// deprecated, CBOR byte string describing, in algorithm specific format,  the part of the digital content over which the soft binding value has been computed"
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub extent: Option<Vec<u8>>,
+    pub extent: Option<serde_bytes::ByteBuf>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timespan: Option<SoftBindingTimespanMap>,
     /// CBOR object defined in regions-of-interest.cddl
@@ -1663,7 +1663,7 @@ pub struct TstContainer {
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct TstToken {
-    pub val: Vec<u8>,
+    pub val: serde_bytes::ByteBuf,
 }
 
 /// The data structure used to store a reference to an external URI WITHOUT a hash.
