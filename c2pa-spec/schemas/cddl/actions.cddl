@@ -76,7 +76,7 @@ parameters-map = {
 
 $action-reason /= "c2pa.PII.present"
 $action-reason /= "c2pa.invalid.data"
-$action-reason /= "c2pa.tradesecret.present"
+$action-reason /= "c2pa.trade-secret.present"
 $action-reason /= "c2pa.government.confidential"
 $action-reason /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+"
 
@@ -120,6 +120,7 @@ parameters-common-map-v2 = (
 parameters-map-v2 = {
   ? "redacted": $jumbf-uri-type, ; A JUMBF URI to the redacted assertion, required when the action is `c2pa.redacted`
   ? "ingredients": [1* $hashed-uri-map], ; A list of hashed JUMBF URI(s) to the ingredient (v2 or v3) assertion(s) that this action acts on
+  ? "relatedAssertions": [1* $hashed-uri-map], ; hashed JUMBF URI(s) to assertion(s) related to this action that are neither ingredients nor actions
   ? "sourceLanguage": tstr .size (1..max-tstr-length), ; BCP-47 code of the source language of a `c2pa.translated` action
   ? "targetLanguage": tstr .size (1..max-tstr-length), ; BCP-47 code of the target language of a `c2pa.translated` action
   ? "multipleInstances": bool, ; was this action performed multiple times

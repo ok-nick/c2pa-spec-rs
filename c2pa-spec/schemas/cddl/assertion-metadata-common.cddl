@@ -6,6 +6,9 @@ $assertion-metadata-map /= {
   ? "dataSource": source-map, ; A description of the source of the assertion data, selected from a predefined list
   ? "localizations" : [1* localization-data-entry] ; localizations for strings in the assertion
   ? "regionOfInterest" : $region-map ; describes a region of the asset where this assertion is relevant
+  ? "processStart": tdate, ; RFC 3339 date-time when the process began (advisory, not a trusted timestamp)
+  ? "processEnd": tdate, ; RFC 3339 date-time when the process ended (advisory, not a trusted timestamp)
+  * tstr => any ; custom fields
 }
 
 $source-type /= "signer"
