@@ -274,6 +274,65 @@ pub struct ParametersMapV2 {
     pub parameters_common_map_v2: ParametersCommonMapV2,
 }
 
+/// CDDL Schema for AI Model Disclosure Metadata
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct AiModelDisclosureMap {
+    /// this is an enumeration of AI model types
+    #[serde(rename = "modelType")]
+    pub model_type: ModelTypeChoice,
+    /// human-readable name of the AI model used
+    #[serde(rename = "modelName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_name: Option<String>,
+    /// unique identifier of the AI model used (e.g., a URI, PURL, etc.)
+    #[serde(rename = "modelIdentifier")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_identifier: Option<String>,
+    /// this is a structured object that describes the content profile of the AI model used, including human oversight level and other relevant information
+    #[serde(rename = "contentProfile")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content_profile: Option<ContentProfileMap>,
+    /// list of domain values
+    #[serde(rename = "scientificDomain")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scientific_domain: Option<ScientificDomainList>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<AssertionMetadataMap>,
+}
+
+pub type ModelTypeChoice = String;
+
+/// Values from the arXiv taxonomy, e.g., ["cs.AI", "physics.optics"]
+pub type ScientificDomainString = String;
+
+pub type ScientificDomainList = Vec<ScientificDomainString>;
+
+/// Content Profile Definition
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct ContentProfileMap {
+    #[serde(rename = "humanOversightLevel")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub human_oversight_level: Option<HumanOversightEnum>,
+}
+
+/// Human oversight level: used by claim generators to declare the degree of human
+/// involvement in the generation pipeline. Consumed by validators for automated
+/// routing and risk decisions.
+///   "fully_autonomous"  -> no human review after model output (highest scrutiny)
+///   "prompt_guided"     -> human provided prompts/config but no final approval (moderate scrutiny)
+///   "human_validated"   -> human reviewed/approved final output prior to release (reduced automated scrutiny when attested)
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum HumanOversightEnum {
+    #[serde(rename = "fully_autonomous")]
+    FullyAutonomous,
+    #[serde(rename = "prompt_guided")]
+    PromptGuided,
+    #[serde(rename = "human_validated")]
+    HumanValidated,
+}
+
 /// Describes a reference to an alternative version of the content
 /// (e.g. an original preservation image in Exif, a secure capture from TEE, etc.)
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -1609,6 +1668,15 @@ pub struct SoftBindingMetadataMap {
     pub entries: std::collections::HashMap<String, ciborium::Value>,
 }
 
+/// The data structures used to store an array of
+/// manifest URNs to time-stamp "blobs"
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct TimeStampMap {
+    pub entries: std::collections::HashMap<TimeStampEntry, serde_bytes::ByteBuf>,
+}
+
+pub type TimeStampEntry = String;
+
 /// Possible values
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
@@ -1683,6 +1751,301 @@ pub struct UnhashedExtUriMap {
     /// additional information about the data's type
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_types: Option<Vec<AssetTypeMap>>,
+}
+
+/// Success codes
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum StatusCode {
+    /// Success codes
+    #[serde(rename = "assertion.accessible")]
+    AssertionAccessible,
+    #[serde(rename = "assertion.bmffHash.match")]
+    AssertionBmffHashMatch,
+    #[serde(rename = "assertion.boxesHash.match")]
+    AssertionBoxesHashMatch,
+    #[serde(rename = "assertion.collectionHash.match")]
+    AssertionCollectionHashMatch,
+    #[serde(rename = "assertion.dataHash.match")]
+    AssertionDataHashMatch,
+    #[serde(rename = "assertion.hashedURI.match")]
+    AssertionHashedUriMatch,
+    #[serde(rename = "assertion.alternativeContentRepresentation.match")]
+    AssertionAlternativeContentRepresentationMatch,
+    #[serde(rename = "assertion.multiAssetHash.match")]
+    AssertionMultiAssetHashMatch,
+    #[serde(rename = "claimSignature.insideValidity")]
+    ClaimSignatureInsideValidity,
+    #[serde(rename = "claimSignature.validated")]
+    ClaimSignatureValidated,
+    #[serde(rename = "ingredient.claimSignature.validated")]
+    IngredientClaimSignatureValidated,
+    #[serde(rename = "ingredient.manifest.validated")]
+    IngredientManifestValidated,
+    #[serde(rename = "signingCredential.ocsp.notRevoked")]
+    SigningCredentialOcspNotRevoked,
+    #[serde(rename = "signingCredential.trusted")]
+    SigningCredentialTrusted,
+    #[serde(rename = "timeStamp.trusted")]
+    TimeStampTrusted,
+    #[serde(rename = "timeStamp.validated")]
+    TimeStampValidated,
+    /// Informational codes
+    #[serde(rename = "algorithm.deprecated")]
+    AlgorithmDeprecated,
+    #[serde(rename = "assertion.bmffHash.additionalExclusionsPresent")]
+    AssertionBmffHashAdditionalExclusionsPresent,
+    #[serde(rename = "assertion.boxesHash.additionalExclusionsPresent")]
+    AssertionBoxesHashAdditionalExclusionsPresent,
+    #[serde(rename = "assertion.dataHash.additionalExclusionsPresent")]
+    AssertionDataHashAdditionalExclusionsPresent,
+    #[serde(rename = "ingredient.unknownProvenance")]
+    IngredientUnknownProvenance,
+    #[serde(rename = "signingCredential.ocsp.inaccessible")]
+    SigningCredentialOcspInaccessible,
+    #[serde(rename = "signingCredential.ocsp.skipped")]
+    SigningCredentialOcspSkipped,
+    #[serde(rename = "signingCredential.ocsp.unknown")]
+    SigningCredentialOcspUnknown,
+    #[serde(rename = "timeOfSigning.insideValidity")]
+    TimeOfSigningInsideValidity,
+    #[serde(rename = "timeOfSigning.outsideValidity")]
+    TimeOfSigningOutsideValidity,
+    #[serde(rename = "timeStamp.credentialInvalid")]
+    TimeStampCredentialInvalid,
+    #[serde(rename = "timeStamp.malformed")]
+    TimeStampMalformed,
+    #[serde(rename = "timeStamp.mismatch")]
+    TimeStampMismatch,
+    #[serde(rename = "timeStamp.outsideValidity")]
+    TimeStampOutsideValidity,
+    #[serde(rename = "timeStamp.untrusted")]
+    TimeStampUntrusted,
+    /// Failure codes
+    #[serde(rename = "algorithm.unsupported")]
+    AlgorithmUnsupported,
+    #[serde(rename = "assertion.action.ingredientMismatch")]
+    AssertionActionIngredientMismatch,
+    #[serde(rename = "assertion.action.malformed")]
+    AssertionActionMalformed,
+    #[serde(rename = "assertion.action.redacted")]
+    AssertionActionRedacted,
+    #[serde(rename = "assertion.action.redactionMismatch")]
+    AssertionActionRedactionMismatch,
+    #[serde(rename = "assertion.action.softBindingMissing")]
+    AssertionActionSoftBindingMissing,
+    #[serde(rename = "assertion.bmffHash.malformed")]
+    AssertionBmffHashMalformed,
+    #[serde(rename = "assertion.bmffHash.mismatch")]
+    AssertionBmffHashMismatch,
+    #[serde(rename = "assertion.boxesHash.malformed")]
+    AssertionBoxesHashMalformed,
+    #[serde(rename = "assertion.boxesHash.mismatch")]
+    AssertionBoxesHashMismatch,
+    #[serde(rename = "assertion.boxesHash.unknownBox")]
+    AssertionBoxesHashUnknownBox,
+    #[serde(rename = "assertion.cbor.invalid")]
+    AssertionCborInvalid,
+    #[serde(rename = "assertion.cloud-data.actions")]
+    AssertionCloudDataActions,
+    #[serde(rename = "assertion.cloud-data.hardBinding")]
+    AssertionCloudDataHardBinding,
+    #[serde(rename = "assertion.cloud-data.malformed")]
+    AssertionCloudDataMalformed,
+    #[serde(rename = "assertion.cloud-data.labelMismatch")]
+    AssertionCloudDataLabelMismatch,
+    #[serde(rename = "assertion.collectionHash.incorrectFileCount")]
+    AssertionCollectionHashIncorrectFileCount,
+    #[serde(rename = "assertion.collectionHash.invalidURI")]
+    AssertionCollectionHashInvalidUri,
+    #[serde(rename = "assertion.collectionHash.malformed")]
+    AssertionCollectionHashMalformed,
+    #[serde(rename = "assertion.collectionHash.mismatch")]
+    AssertionCollectionHashMismatch,
+    #[serde(rename = "assertion.dataHash.malformed")]
+    AssertionDataHashMalformed,
+    #[serde(rename = "assertion.dataHash.mismatch")]
+    AssertionDataHashMismatch,
+    #[serde(rename = "assertion.dataHash.redacted")]
+    AssertionDataHashRedacted,
+    #[serde(rename = "assertion.external-reference.created")]
+    AssertionExternalReferenceCreated,
+    #[serde(rename = "assertion.external-reference.hashMismatch")]
+    AssertionExternalReferenceHashMismatch,
+    #[serde(rename = "assertion.external-reference.labelMismatch")]
+    AssertionExternalReferenceLabelMismatch,
+    #[serde(rename = "assertion.external-reference.malformed")]
+    AssertionExternalReferenceMalformed,
+    #[serde(rename = "assertion.hardBinding.redacted")]
+    AssertionHardBindingRedacted,
+    #[serde(rename = "assertion.hashedURI.mismatch")]
+    AssertionHashedUriMismatch,
+    #[serde(rename = "assertion.inaccessible")]
+    AssertionInaccessible,
+    #[serde(rename = "assertion.ingredient.malformed")]
+    AssertionIngredientMalformed,
+    #[serde(rename = "assertion.json.invalid")]
+    AssertionJsonInvalid,
+    #[serde(rename = "assertion.missing")]
+    AssertionMissing,
+    #[serde(rename = "assertion.alternativeContentRepresentation.malformed")]
+    AssertionAlternativeContentRepresentationMalformed,
+    #[serde(rename = "assertion.alternativeContentRepresentation.hashMismatch")]
+    AssertionAlternativeContentRepresentationHashMismatch,
+    #[serde(rename = "assertion.alternativeContentRepresentation.missing")]
+    AssertionAlternativeContentRepresentationMissing,
+    #[serde(rename = "assertion.multiAssetHash.malformed")]
+    AssertionMultiAssetHashMalformed,
+    #[serde(rename = "assertion.multiAssetHash.missingPart")]
+    AssertionMultiAssetHashMissingPart,
+    #[serde(rename = "assertion.multiAssetHash.mismatch")]
+    AssertionMultiAssetHashMismatch,
+    #[serde(rename = "assertion.multipleHardBindings")]
+    AssertionMultipleHardBindings,
+    #[serde(rename = "assertion.notRedacted")]
+    AssertionNotRedacted,
+    #[serde(rename = "assertion.outsideManifest")]
+    AssertionOutsideManifest,
+    #[serde(rename = "assertion.selfRedacted")]
+    AssertionSelfRedacted,
+    #[serde(rename = "assertion.timestamp.malformed")]
+    AssertionTimestampMalformed,
+    #[serde(rename = "assertion.undeclared")]
+    AssertionUndeclared,
+    #[serde(rename = "claim.cbor.invalid")]
+    ClaimCborInvalid,
+    #[serde(rename = "claim.hardBindings.missing")]
+    ClaimHardBindingsMissing,
+    #[serde(rename = "claim.malformed")]
+    ClaimMalformed,
+    #[serde(rename = "claim.missing")]
+    ClaimMissing,
+    #[serde(rename = "claim.multiple")]
+    ClaimMultiple,
+    #[serde(rename = "claimSignature.missing")]
+    ClaimSignatureMissing,
+    #[serde(rename = "claimSignature.mismatch")]
+    ClaimSignatureMismatch,
+    #[serde(rename = "claimSignature.outsideValidity")]
+    ClaimSignatureOutsideValidity,
+    #[serde(rename = "general.error")]
+    GeneralError,
+    #[serde(rename = "hashedURI.missing")]
+    HashedUriMissing,
+    #[serde(rename = "hashedURI.mismatch")]
+    HashedUriMismatch,
+    #[serde(rename = "ingredient.claimSignature.missing")]
+    IngredientClaimSignatureMissing,
+    #[serde(rename = "ingredient.claimSignature.mismatch")]
+    IngredientClaimSignatureMismatch,
+    #[serde(rename = "ingredient.manifest.missing")]
+    IngredientManifestMissing,
+    #[serde(rename = "ingredient.manifest.mismatch")]
+    IngredientManifestMismatch,
+    #[serde(rename = "livevideo.assertion.invalid")]
+    LivevideoAssertionInvalid,
+    #[serde(rename = "livevideo.continuityMethod.invalid")]
+    LivevideoContinuityMethodInvalid,
+    #[serde(rename = "livevideo.init.invalid")]
+    LivevideoInitInvalid,
+    #[serde(rename = "livevideo.manifest.invalid")]
+    LivevideoManifestInvalid,
+    #[serde(rename = "livevideo.segment.invalid")]
+    LivevideoSegmentInvalid,
+    #[serde(rename = "livevideo.sessionkey.invalid")]
+    LivevideoSessionkeyInvalid,
+    #[serde(rename = "manifest.compressed.invalid")]
+    ManifestCompressedInvalid,
+    #[serde(rename = "manifest.html.multipleManifests")]
+    ManifestHtmlMultipleManifests,
+    #[serde(rename = "manifest.inaccessible")]
+    ManifestInaccessible,
+    #[serde(rename = "manifest.multipleParents")]
+    ManifestMultipleParents,
+    #[serde(rename = "manifest.structuredText.emptyReference")]
+    ManifestStructuredTextEmptyReference,
+    #[serde(rename = "manifest.structuredText.malformedReference")]
+    ManifestStructuredTextMalformedReference,
+    #[serde(rename = "manifest.structuredText.multipleReferences")]
+    ManifestStructuredTextMultipleReferences,
+    #[serde(rename = "manifest.structuredText.noManifest")]
+    ManifestStructuredTextNoManifest,
+    #[serde(rename = "manifest.structuredText.noResolutionPath")]
+    ManifestStructuredTextNoResolutionPath,
+    #[serde(rename = "manifest.timestamp.invalid")]
+    ManifestTimestampInvalid,
+    #[serde(rename = "manifest.timestamp.wrongParents")]
+    ManifestTimestampWrongParents,
+    #[serde(rename = "manifest.update.invalid")]
+    ManifestUpdateInvalid,
+    #[serde(rename = "manifest.update.wrongParents")]
+    ManifestUpdateWrongParents,
+    #[serde(rename = "signingCredential.invalid")]
+    SigningCredentialInvalid,
+    #[serde(rename = "signingCredential.ocsp.revoked")]
+    SigningCredentialOcspRevoked,
+    #[serde(rename = "signingCredential.untrusted")]
+    SigningCredentialUntrusted,
+    /// custom status codes
+    String(String),
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct StatusMap {
+    /// A label-formatted string that describes the status
+    pub code: StatusCode,
+    /// JUMBF URI reference to the JUMBF box to which this status code applies
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<crate::jumbf_uri::JumbfUri>,
+    /// A human readable string explaining the status
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub explanation: Option<String>,
+    /// DEPRECATED. Does the code reflect success (true) or failure (false)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub success: Option<bool>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct StatusCodesMap {
+    /// an array of validation success codes. May be empty.
+    pub success: Vec<StatusMap>,
+    /// an array of validation informational codes. May be empty.
+    pub informational: Vec<StatusMap>,
+    /// an array of validation failure codes. May be empty.
+    pub failure: Vec<StatusMap>,
+}
+
+/// Definition of a SemVer formatted regex (used in a few places)
+pub type SemverString = String;
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct ValidationResultsMap {
+    /// Validation status codes for the ingredient's active manifest. Present if ingredient is a C2PA asset. Not present if the ingredient is not a C2PA asset.
+    #[serde(rename = "activeManifest")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active_manifest: Option<StatusCodesMap>,
+    /// List of any changes/deltas between the current and previous validation results for each ingredient's manifest. Present if the the ingredient is a C2PA asset.
+    #[serde(rename = "ingredientDeltas")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ingredient_deltas: Option<Vec<IngredientDeltaValidationResultMap>>,
+    /// The version of the specification against which the validation was performed (SemVer formatted string)
+    #[serde(rename = "specVersion")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spec_version: Option<SemverString>,
+    /// URI to the trust list that was used to validate certificates
+    #[serde(rename = "trustListUri")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trust_list_uri: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct IngredientDeltaValidationResultMap {
+    /// JUMBF URI reference to the ingredient assertion
+    #[serde(rename = "ingredientAssertionURI")]
+    pub ingredient_assertion_uri: crate::jumbf_uri::JumbfUri,
+    /// Validation results for the ingredient's active manifest
+    #[serde(rename = "validationDeltas")]
+    pub validation_deltas: StatusCodesMap,
 }
 
 pub type VerifiableSegmentInfo = CoseSign1Tagged;
