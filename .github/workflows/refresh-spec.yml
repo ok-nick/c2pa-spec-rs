@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   refresh:
@@ -71,6 +72,40 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Install cddl parser
+        run: cargo install cddl --locked
+
+      - name: Detect obsolete patches
+        id: patches
+        run: |
+          set -euo pipefail
+          obsolete=()
+          patches_dir=c2pa-spec/schema-patches
+          cddl_dir=c2pa-spec/schemas/cddl
+          if [ -d "$patches_dir" ]; then
+            for patch in "$patches_dir"/*.cddl; do
+              [ -e "$patch" ] || continue
+              name=$(basename "$patch")
+              upstream="$cddl_dir/$name"
+              [ -f "$upstream" ] || continue
+              if cddl compile-cddl --cddl "$upstream" >/dev/null 2>&1; then
+                obsolete+=("$name")
+              fi
+            done
+          fi
+          if [ ${#obsolete[@]} -gt 0 ]; then
+            printf 'Obsolete patches (upstream now parses cleanly):\n'
+            printf '  - %s\n' "${obsolete[@]}"
+            {
+              echo "list<<EOF"
+              printf '%s\n' "${obsolete[@]}"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "No obsolete patches detected."
+            echo "list=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Verify build and tests
         if: steps.diff.outputs.changed == 'true'
         id: verify
@@ -96,8 +131,49 @@ jobs:
 
             `cargo test --workspace` on this branch: **${{ steps.verify.outcome }}**.
 
+            **Obsolete patches:**
+            ```
+            ${{ steps.patches.outputs.list || '(none)' }}
+            ```
+            If any are listed, the upstream file now parses with `cddl` on its
+            own. Review whether the patch content has also been merged upstream
+            and delete the patch file if so (see `c2pa-spec/schema-patches/`).
+
             Review the diff for upstream spec changes, confirm the regenerated types
             still round-trip against real manifests, and merge if CI is green.
           branch: auto/refresh-spec
           delete-branch: true
           labels: spec-refresh
+
+      - name: Report workflow failure
+        if: failure() || steps.verify.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          OLD: ${{ steps.refresh.outputs.old }}
+          NEW: ${{ steps.refresh.outputs.new }}
+          VERIFY: ${{ steps.verify.outcome }}
+        run: |
+          set -euo pipefail
+          body=$(cat <<EOF
+          Nightly \`refresh-spec\` run failed.
+
+          - Run: $RUN_URL
+          - Spec version before: $OLD
+          - Spec version after: $NEW
+          - Test step outcome: $VERIFY
+
+          Investigate the run logs. If this is a codegen or parser
+          failure caused by upstream schema changes, a new
+          \`schema-patches/\` entry or a codegen fix is likely needed.
+          EOF
+          )
+          existing=$(gh issue list --label spec-refresh-failure --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create \
+              --title "Nightly spec refresh failures" \
+              --label spec-refresh-failure \
+              --body "$body"
+          fi
