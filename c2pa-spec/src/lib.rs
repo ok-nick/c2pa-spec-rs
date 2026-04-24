@@ -66,7 +66,6 @@ pub use serde_bytes::ByteBuf;
 pub type CoseKey = ciborium::Value;
 pub type CoseSign1 = ciborium::Value;
 pub type CoseSign1Tagged = ciborium::Value;
-pub type RegionMap = ciborium::Value;
 
 /// Valid metadata field names grouped by vocabulary (XMP, Exif, IPTC,
 /// TIFF, PLUS, Photoshop, Dublin Core, Camera Raw, and PDF), generated
@@ -81,7 +80,7 @@ pub mod jumbf_uri;
 
 #[allow(rustdoc::bare_urls, rustdoc::invalid_html_tags)]
 mod generated {
-    use crate::{CoseKey, CoseSign1, CoseSign1Tagged, RegionMap};
+    use crate::{CoseKey, CoseSign1, CoseSign1Tagged};
     include!("generated.rs");
 }
 pub use generated::*;

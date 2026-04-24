@@ -1037,6 +1037,10 @@ pub enum UnitChoice {
     M,
     #[serde(rename = "mm")]
     Mm,
+    #[serde(rename = "pixel")]
+    Pixel,
+    #[serde(rename = "percent")]
+    Percent,
 }
 
 pub type UnitType = UnitChoice;
@@ -1575,6 +1579,230 @@ pub struct PartHashMap {
 pub struct RVals {
     #[serde(rename = "ocspVals")]
     pub ocsp_vals: Vec<serde_bytes::ByteBuf>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct RegionMap {
+    /// definition of the range, one or more ranges
+    pub region: Vec<RangeMap>,
+    /// a free-text string representing a human-readable name for the region which could be used in a user interface.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// a free-text string representing a machine-readable, unique to this assertion, identifier for the region.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    /// from a controlled list
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_: Option<String>,
+    /// DEPRECATED
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<RoleChoice>,
+    /// human readable description of the region
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// additional information about the assertion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Box<AssertionMetadataMap>>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum RangeChoice {
+    #[serde(rename = "spatial")]
+    Spatial,
+    #[serde(rename = "temporal")]
+    Temporal,
+    #[serde(rename = "frame")]
+    Frame,
+    #[serde(rename = "textual")]
+    Textual,
+    #[serde(rename = "identified")]
+    Identified,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct RangeMap {
+    /// either "spatial", "temporal", "frame", "textual" or "identified"
+    #[serde(rename = "type")]
+    pub type_: RangeChoice,
+    /// description of the shape of a spatial range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shape: Option<ShapeMap>,
+    /// description of the time boundaries of a temporal range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time: Option<TimeMap>,
+    /// description of the frame boundaries of a temporal range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame: Option<FrameMap>,
+    /// description of the boundaries of a textual range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<TextMap>,
+    /// description of the boundaries of an identified range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item: Option<ItemMap>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct CoordinateMap {
+    /// coordinate along the x-axis
+    pub x: f64,
+    /// coordinate along the y-axis
+    pub y: f64,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum ShapeChoice {
+    #[serde(rename = "rectangle")]
+    Rectangle,
+    #[serde(rename = "circle")]
+    Circle,
+    #[serde(rename = "polygon")]
+    Polygon,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct ShapeMap {
+    /// either "rectangle", "circle" or "polygon"
+    #[serde(rename = "type")]
+    pub type_: ShapeChoice,
+    /// either "pixel" or "percent"
+    pub unit: UnitChoice,
+    /// starting/origin coordinate of the shape.
+    pub origin: CoordinateMap,
+    /// width for rectangles, diameter for circles (ignored for polygons)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub width: Option<f64>,
+    /// height for rectangles
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<f64>,
+    /// inside or outside the shape, default is `true`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inside: Option<bool>,
+    /// remaining points/vertices of the polygon
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertices: Option<Vec<CoordinateMap>>,
+}
+
+/// npt and utc start and end times have different regex formats
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum TimeMap {
+    NptTimeMap(NptTimeMap),
+    WallClockTimeMap(WallClockTimeMap),
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct NptTimeMap {
+    /// if not present, assume "npt" time map
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_: Option<String>,
+    /// start time (or beginning of asset if not present). Inclusive.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<String>,
+    /// end time (or end of asset if not present). Exclusive by default, see endInclusivity for override behaviour.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<String>,
+    /// if present and set to "inclusive", the end time is inclusive of that moment in time, otherwise it is exclusive (default).
+    #[serde(rename = "endInclusivity")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_inclusivity: Option<ciborium::Value>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct WallClockTimeMap {
+    /// required to be present for "Wall Clock Time"
+    #[serde(rename = "type")]
+    pub type_: String,
+    /// start time (or beginning of asset if not present). Inclusive.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<String>,
+    /// end time (or end of asset/live edge if not present). Exclusive by default, see endInclusivity for override behaviour.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<String>,
+    /// if present and set to "inclusive", the end time is inclusive of that moment in time, otherwise it is exclusive (default).
+    #[serde(rename = "endInclusivity")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_inclusivity: Option<ciborium::Value>,
+}
+
+/// this can be used for either frames of a video or pages of a document
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct FrameMap {
+    /// start frame (or beginning of asset if not present).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<i64>,
+    /// end frame (or end of asset if not present).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<i64>,
+}
+
+/// this is modelled after the W3C Web Annotation selector model
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct TextSelectorMap {
+    /// fragment identifier, as per RFC3023 or ISO 32000-2, Annex O
+    pub fragment: String,
+    /// start character offset (or beginning of fragment if not present).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<i64>,
+    /// end character offset (or end of fragment if not present).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<i64>,
+}
+
+/// one or two text-selector-maps used to identify the range
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct TextSelectorRangeMap {
+    /// start (or only) text selector
+    pub selector: TextSelectorMap,
+    /// if present, represents the end of the text range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<TextSelectorMap>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct TextMap {
+    /// array of (possibly discontinuous) ranges of text
+    pub selectors: Vec<TextSelectorRangeMap>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct ItemMap {
+    /// the container-specific term used to identify items, such as "track_id" for MP4 or "item_ID" for HEIF
+    pub identifier: String,
+    /// the value of the identifier, e.g. a value of "2" for an identifier of "track_id" would imply track 2 of the asset
+    pub value: String,
+}
+
+/// These values of role-choice are deprecated
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum RoleChoice {
+    /// These values of role-choice are deprecated
+    #[serde(rename = "c2pa.areaOfInterest")]
+    C2paAreaOfInterest,
+    #[serde(rename = "c2pa.cropped")]
+    C2paCropped,
+    #[serde(rename = "c2pa.edited")]
+    C2paEdited,
+    #[serde(rename = "c2pa.placed")]
+    C2paPlaced,
+    #[serde(rename = "c2pa.redacted")]
+    C2paRedacted,
+    #[serde(rename = "c2pa.subjectArea")]
+    C2paSubjectArea,
+    #[serde(rename = "c2pa.deleted")]
+    C2paDeleted,
+    #[serde(rename = "c2pa.styled")]
+    C2paStyled,
+    #[serde(rename = "c2pa.watermarked")]
+    C2paWatermarked,
+    #[serde(rename = "c2pa.watermarked.bound")]
+    C2paWatermarkedBound,
+    #[serde(rename = "c2pa.watermarked.unbound")]
+    C2paWatermarkedUnbound,
 }
 
 /// Data structure to supply session keys used for live-video validation

@@ -9,6 +9,7 @@ use cddl::ast::{
   Group, GroupChoice, GroupEntry, MemberKey, Occur, Rule, Type, Type1, Type2, TypeChoice, TypeRule,
   ValueMemberKeyEntry, CDDL,
 };
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::Write;
 
 /// Extracts comments from raw CDDL source and exposes them keyed by line
@@ -211,7 +212,8 @@ pub(crate) fn generate_all_types(
   source: &str,
 ) -> Result<String, CodegenError> {
   let comments = CommentIndex::build(source);
-  let type_defs = collect_type_defs(cddl, &comments)?;
+  let mut type_defs = collect_type_defs(cddl, &comments)?;
+  break_type_cycles(&mut type_defs);
   render_type_defs(&type_defs)
 }
 
@@ -278,6 +280,230 @@ pub(crate) fn pascal_to_cddl_name(pascal: &str) -> String {
     }
   }
   result
+}
+
+/// Detect by-value type cycles among generated structs / enums and box
+/// one edge per cycle so the resulting Rust types have known sizes.
+///
+/// CDDL doesn't care about cycles; Rust does. A field of type `T` (or
+/// `Option<T>`) contributes T's size to the parent, so two structs that
+/// each contain the other by value compile to types of infinite size.
+/// Wrapping one edge in `Box` breaks the size cycle without changing
+/// the wire format (Box<T> serialises the same as T under serde / CBOR).
+///
+/// **Which edges count**: bare type references at the top of a field's
+/// type string (`T` or `Option<T>` with rust_type=`T`). Heap-allocated
+/// wrappers (`Vec`, `Box`, `HashMap`, `Rc`, etc.) have fixed size and
+/// don't propagate the inner type's size, so edges through them are
+/// not part of the sizing graph.
+///
+/// **Which edge to box**: DFS visits types in alphabetical order. A
+/// back-edge (one whose target is currently-on-the-stack) closes the
+/// cycle, and that edge gets boxed. The order is deterministic so
+/// regenerations produce stable diffs even as new types appear.
+fn break_type_cycles(defs: &mut [RustTypeDef]) {
+  let names: BTreeSet<String> = defs.iter().map(|d| def_name(d).to_string()).collect();
+
+  // Build adjacency in alphabetical order so the DFS is deterministic.
+  let mut adj: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+  for def in defs.iter() {
+    let from = def_name(def).to_string();
+    let entry = adj.entry(from).or_default();
+    match def {
+      RustTypeDef::Struct { fields, .. } => {
+        for f in fields {
+          if let Some(t) = sizing_target(&f.rust_type) {
+            if names.contains(t) {
+              entry.insert(t.to_string());
+            }
+          }
+        }
+      }
+      RustTypeDef::Enum { variants, .. } => {
+        for v in variants {
+          if let Some(inner) = &v.inner_type {
+            if let Some(t) = sizing_target(inner) {
+              if names.contains(t) {
+                entry.insert(t.to_string());
+              }
+            }
+          }
+        }
+      }
+      // Type aliases are transparent; they don't allocate. Field-level
+      // boxing in the structs that point at them handles the cycle.
+      RustTypeDef::TypeAlias { .. } => {}
+    }
+  }
+
+  // DFS with white/gray/black coloring; record back-edges.
+  #[derive(Clone, Copy, PartialEq)]
+  enum Color {
+    White,
+    Gray,
+    Black,
+  }
+  let mut color: BTreeMap<String, Color> = adj.keys().map(|n| (n.clone(), Color::White)).collect();
+  let mut back_edges: HashSet<(String, String)> = HashSet::new();
+  // Iterative DFS keeps stack depth bounded for very large schemas.
+  for start in adj.keys() {
+    if color[start] != Color::White {
+      continue;
+    }
+    let mut stack: Vec<(String, std::vec::IntoIter<String>)> =
+      vec![(start.clone(), adj[start].iter().cloned().collect::<Vec<_>>().into_iter())];
+    color.insert(start.clone(), Color::Gray);
+    while let Some((node, iter)) = stack.last_mut() {
+      if let Some(next) = iter.next() {
+        match color.get(&next).copied().unwrap_or(Color::Black) {
+          Color::White => {
+            color.insert(next.clone(), Color::Gray);
+            let next_iter = adj
+              .get(&next)
+              .cloned()
+              .unwrap_or_default()
+              .into_iter()
+              .collect::<Vec<_>>()
+              .into_iter();
+            stack.push((next, next_iter));
+          }
+          Color::Gray => {
+            // Back-edge: node -> next, where next is an ancestor on the stack.
+            back_edges.insert((node.clone(), next));
+          }
+          Color::Black => {}
+        }
+      } else {
+        let (done, _) = stack.pop().unwrap();
+        color.insert(done, Color::Black);
+      }
+    }
+  }
+
+  if back_edges.is_empty() {
+    return;
+  }
+
+  // Apply the boxes: rewrite each chosen edge's field/variant type.
+  for def in defs.iter_mut() {
+    let from = def_name(def).to_string();
+    match def {
+      RustTypeDef::Struct { fields, .. } => {
+        for f in fields {
+          if let Some(t) = sizing_target(&f.rust_type) {
+            if back_edges.contains(&(from.clone(), t.to_string())) {
+              f.rust_type = format!("Box<{}>", f.rust_type);
+            }
+          }
+        }
+      }
+      RustTypeDef::Enum { variants, .. } => {
+        for v in variants {
+          if let Some(inner) = v.inner_type.clone() {
+            if let Some(t) = sizing_target(&inner) {
+              if back_edges.contains(&(from.clone(), t.to_string())) {
+                v.inner_type = Some(format!("Box<{}>", inner));
+              }
+            }
+          }
+        }
+      }
+      RustTypeDef::TypeAlias { .. } => {}
+    }
+  }
+}
+
+/// Extract the type name from a rust_type string if it contributes to
+/// a sizing cycle. Returns the bare name for `T`, and `None` for
+/// `Vec<T>`, `HashMap<K, V>`, `Box<T>`, paths, references, tuples,
+/// etc. — types that don't propagate size of T into the parent.
+fn sizing_target(rust_type: &str) -> Option<&str> {
+  let trimmed = rust_type.trim();
+  if trimmed.is_empty() {
+    return None;
+  }
+  // Any generic, path, reference, or tuple is either heap-allocated
+  // (Vec/Box/HashMap/...) or otherwise doesn't fit a simple bare-name
+  // edge.
+  if trimmed.contains('<') || trimmed.contains('&') || trimmed.contains('(') || trimmed.contains("::") {
+    return None;
+  }
+  Some(trimmed)
+}
+
+#[cfg(test)]
+mod cycle_tests {
+  use super::*;
+
+  fn struct_def(name: &str, fields: Vec<(&str, &str, bool)>) -> RustTypeDef {
+    RustTypeDef::Struct {
+      name: name.to_string(),
+      fields: fields
+        .into_iter()
+        .map(|(n, ty, opt)| RustField {
+          name: n.to_string(),
+          original_name: n.to_string(),
+          rust_type: ty.to_string(),
+          is_optional: opt,
+          docs: Vec::new(),
+        })
+        .collect(),
+      docs: Vec::new(),
+    }
+  }
+
+  #[test]
+  fn breaks_two_cycle_at_alphabetically_later_type() {
+    let mut defs = vec![
+      struct_def("AssertionMetadataMap", vec![("region_of_interest", "RegionMap", true)]),
+      struct_def("RegionMap", vec![("metadata", "AssertionMetadataMap", true)]),
+    ];
+    break_type_cycles(&mut defs);
+    let region_map = defs.iter().find(|d| def_name(d) == "RegionMap").unwrap();
+    let amm = defs
+      .iter()
+      .find(|d| def_name(d) == "AssertionMetadataMap")
+      .unwrap();
+    if let RustTypeDef::Struct { fields, .. } = region_map {
+      assert_eq!(fields[0].rust_type, "Box<AssertionMetadataMap>");
+    } else {
+      panic!("RegionMap missing");
+    }
+    if let RustTypeDef::Struct { fields, .. } = amm {
+      assert_eq!(fields[0].rust_type, "RegionMap");
+    } else {
+      panic!("AssertionMetadataMap missing");
+    }
+  }
+
+  #[test]
+  fn ignores_vec_and_hashmap_edges() {
+    let mut defs = vec![
+      struct_def("A", vec![("bs", "Vec<B>", false)]),
+      struct_def("B", vec![("a", "A", true)]),
+    ];
+    break_type_cycles(&mut defs);
+    // No cycle through Vec, so no Box should appear.
+    for d in &defs {
+      if let RustTypeDef::Struct { fields, .. } = d {
+        for f in fields {
+          assert!(!f.rust_type.starts_with("Box<"), "unexpected boxing in {:?}", d);
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn no_cycle_no_change() {
+    let original = vec![
+      struct_def("A", vec![("b", "B", false)]),
+      struct_def("B", vec![("c", "C", false)]),
+      struct_def("C", vec![("name", "String", false)]),
+    ];
+    let mut defs = original.clone();
+    break_type_cycles(&mut defs);
+    assert_eq!(defs, original);
+  }
 }
 
 // --- Internal helpers (unchanged from original codegen) ---

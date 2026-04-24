@@ -33,11 +33,6 @@ const SPEC_INDEX_URL: &str = "https://spec.c2pa.org/specifications/";
 /// `c2pa-spec/CDDL_ISSUES.md`.
 const EXCLUDED_CDDLS: &[&str] = &[
     "jsonld.cddl",
-    // Patchable, but un-excluding creates a type cycle between
-    // `AssertionMetadataMap` and `RegionMap` that the codegen doesn't
-    // yet break with `Box`. Leave stubbed until codegen learns to
-    // handle recursive types.
-    "regions-of-interest.cddl",
     // Self-reference: this is the master file the codegen writes.
     "c2pa.cddl",
 ];
