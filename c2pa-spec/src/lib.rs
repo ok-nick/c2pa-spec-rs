@@ -61,7 +61,6 @@
 //! [`ciborium`]: https://docs.rs/ciborium
 
 pub use ciborium::Value;
-pub use serde_bytes::ByteBuf;
 
 pub type CoseKey = ciborium::Value;
 pub type CoseSign1 = ciborium::Value;

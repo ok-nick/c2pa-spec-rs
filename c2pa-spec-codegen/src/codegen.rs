@@ -1203,10 +1203,12 @@ fn type2_to_rust_string(type2: &Type2<'_>) -> Result<String, CodegenError> {
     Type2::UintValue { .. } => Ok("u64".to_string()),
     Type2::FloatValue { .. } => Ok("f64".to_string()),
     Type2::UTF8ByteString { .. } | Type2::B16ByteString { .. } | Type2::B64ByteString { .. } => {
-      // CDDL byte strings -> CBOR major type 2. `serde_bytes::ByteBuf`
-      // wraps a `Vec<u8>` and serializes as a byte string; a raw
-      // `Vec<u8>` would encode as a CBOR array of `u8`s.
-      Ok("serde_bytes::ByteBuf".to_string())
+      // CDDL byte strings -> CBOR major type 2. Emitted as `Vec<u8>`;
+      // the struct renderer pairs each such field with a
+      // `#[serde_as(as = "serde_with::Bytes")]` attribute so serde
+      // hits the byte-string branch instead of the default
+      // array-of-u8 encoding.
+      Ok("Vec<u8>".to_string())
     }
     Type2::ParenthesizedType { pt, .. } => type_to_rust_string(pt),
     Type2::Unwrap { ident, .. } => Ok(to_pascal_case(ident.ident)),
@@ -1325,7 +1327,7 @@ fn cddl_ident_to_rust_type(ident: &str) -> String {
     "float16" | "float32" | "float64" | "float16-32" | "float32-64" | "float" => "f64".to_string(),
     "number" => "f64".to_string(),
     "tstr" | "text" => "String".to_string(),
-    "bstr" | "bytes" => "serde_bytes::ByteBuf".to_string(),
+    "bstr" | "bytes" => "Vec<u8>".to_string(),
     "null" | "nil" => "()".to_string(),
     "any" => "ciborium::Value".to_string(),
     "undefined" => "()".to_string(),
@@ -1334,7 +1336,7 @@ fn cddl_ident_to_rust_type(ident: &str) -> String {
     "uri" => "String".to_string(),
     "b64url" | "b64legacy" => "String".to_string(),
     "regexp" => "String".to_string(),
-    "biguint" | "bignint" | "bigint" => "serde_bytes::ByteBuf".to_string(),
+    "biguint" | "bignint" | "bigint" => "Vec<u8>".to_string(),
     _ => to_pascal_case(ident),
   }
 }
@@ -1343,7 +1345,7 @@ fn major_type_to_rust(mt: u8) -> String {
   match mt {
     0 => "u64".to_string(),
     1 => "i64".to_string(),
-    2 => "serde_bytes::ByteBuf".to_string(),
+    2 => "Vec<u8>".to_string(),
     3 => "String".to_string(),
     4 => "Vec<ciborium::Value>".to_string(),
     5 => "std::collections::HashMap<String, ciborium::Value>".to_string(),
@@ -1440,14 +1442,39 @@ fn render_struct(
   fields: &[RustField],
   docs: &[String],
 ) -> Result<(), CodegenError> {
+  // Precompute each field's full rendered type (including Option wrap)
+  // and its serde_as pattern, so we know whether to emit the
+  // struct-level `#[serde_with::serde_as]` attribute.
+  let field_types: Vec<String> = fields
+    .iter()
+    .map(|f| {
+      if f.is_optional {
+        format!("Option<{}>", f.rust_type)
+      } else {
+        f.rust_type.clone()
+      }
+    })
+    .collect();
+  let field_patterns: Vec<Option<String>> = field_types
+    .iter()
+    .map(|ty| bytes_serde_as_pattern(ty))
+    .collect();
+  let needs_serde_as = field_patterns.iter().any(Option::is_some);
+
   render_docs(output, "", docs)?;
+  if needs_serde_as {
+    writeln!(output, "#[serde_with::serde_as]")?;
+  }
   writeln!(
     output,
     "#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]"
   )?;
   writeln!(output, "pub struct {} {{", name)?;
-  for field in fields {
+  for (idx, field) in fields.iter().enumerate() {
     render_docs(output, "    ", &field.docs)?;
+    if let Some(pattern) = &field_patterns[idx] {
+      writeln!(output, "    #[serde_as(as = \"{}\")]", pattern)?;
+    }
     if field.name != field.original_name {
       writeln!(output, "    #[serde(rename = \"{}\")]", field.original_name)?;
     }
@@ -1456,14 +1483,12 @@ fn render_struct(
         output,
         "    #[serde(skip_serializing_if = \"Option::is_none\")]"
       )?;
-      writeln!(
-        output,
-        "    pub {}: Option<{}>,",
-        field.name, field.rust_type
-      )?;
-    } else {
-      writeln!(output, "    pub {}: {},", field.name, field.rust_type)?;
     }
+    writeln!(
+      output,
+      "    pub {}: {},",
+      field.name, field_types[idx]
+    )?;
   }
   writeln!(output, "}}")?;
   Ok(())
@@ -1476,7 +1501,25 @@ fn render_type_alias(
   docs: &[String],
 ) -> Result<(), CodegenError> {
   render_docs(output, "", docs)?;
-  writeln!(output, "pub type {} = {};", name, target)?;
+  // A plain `pub type X = Vec<u8>` would inherit `Vec<u8>`'s default
+  // serde behaviour (array of u8), which is the wrong CBOR major
+  // type. Emit a newtype so the bytes attribute can attach to the
+  // inner field.
+  if let Some(pattern) = bytes_serde_as_pattern(target) {
+    writeln!(output, "#[serde_with::serde_as]")?;
+    writeln!(
+      output,
+      "#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]"
+    )?;
+    writeln!(output, "#[serde(transparent)]")?;
+    writeln!(
+      output,
+      "pub struct {}(#[serde_as(as = \"{}\")] pub {});",
+      name, pattern, target
+    )?;
+  } else {
+    writeln!(output, "pub type {} = {};", name, target)?;
+  }
   Ok(())
 }
 
@@ -1486,14 +1529,23 @@ fn render_enum(
   variants: &[RustEnumVariant],
   docs: &[String],
 ) -> Result<(), CodegenError> {
+  let variant_patterns: Vec<Option<String>> = variants
+    .iter()
+    .map(|v| v.inner_type.as_deref().and_then(bytes_serde_as_pattern))
+    .collect();
+  let needs_serde_as = variant_patterns.iter().any(Option::is_some);
+
   render_docs(output, "", docs)?;
+  if needs_serde_as {
+    writeln!(output, "#[serde_with::serde_as]")?;
+  }
   writeln!(
     output,
     "#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]"
   )?;
   writeln!(output, "#[serde(untagged)]")?;
   writeln!(output, "pub enum {} {{", name)?;
-  for variant in variants {
+  for (idx, variant) in variants.iter().enumerate() {
     render_docs(output, "    ", &variant.docs)?;
     if let Some(rename) = &variant.serde_rename {
       writeln!(
@@ -1503,13 +1555,82 @@ fn render_enum(
       )?;
     }
     if let Some(inner) = &variant.inner_type {
-      writeln!(output, "    {}({}),", variant.name, inner)?;
+      if let Some(pattern) = &variant_patterns[idx] {
+        writeln!(
+          output,
+          "    {}(#[serde_as(as = \"{}\")] {}),",
+          variant.name, pattern, inner
+        )?;
+      } else {
+        writeln!(output, "    {}({}),", variant.name, inner)?;
+      }
     } else {
       writeln!(output, "    {},", variant.name)?;
     }
   }
   writeln!(output, "}}")?;
   Ok(())
+}
+
+/// If `ty` references `Vec<u8>` anywhere (directly or nested inside
+/// `Vec`, `Option`, `HashMap`, `BTreeMap`), return a matching
+/// `serde_with` `as = "..."` pattern. Returns `None` when no bytes
+/// substitution is needed.
+///
+/// - `Vec<u8>` → `serde_with::Bytes`
+/// - `Vec<Vec<u8>>` → `Vec<serde_with::Bytes>`
+/// - `Option<Vec<u8>>` → `Option<serde_with::Bytes>`
+/// - `std::collections::HashMap<K, Vec<u8>>` → `std::collections::HashMap<_, serde_with::Bytes>`
+fn bytes_serde_as_pattern(ty: &str) -> Option<String> {
+  let ty = ty.trim();
+  if ty == "Vec<u8>" {
+    return Some("serde_with::Bytes".to_string());
+  }
+  for wrapper in &["Vec", "Option"] {
+    if let Some(inner) = strip_generic(wrapper, ty) {
+      if let Some(inner_pattern) = bytes_serde_as_pattern(inner) {
+        return Some(format!("{}<{}>", wrapper, inner_pattern));
+      }
+    }
+  }
+  for map in &[
+    "std::collections::HashMap",
+    "std::collections::BTreeMap",
+    "HashMap",
+    "BTreeMap",
+  ] {
+    if let Some(inner) = strip_generic(map, ty) {
+      if let Some((_key, value)) = split_top_level_comma(inner) {
+        if let Some(value_pattern) = bytes_serde_as_pattern(value.trim()) {
+          return Some(format!("{}<_, {}>", map, value_pattern));
+        }
+      }
+    }
+  }
+  None
+}
+
+/// Strip `Name<...>` wrapping and return the inner substring, or `None`
+/// if `ty` isn't of that form.
+fn strip_generic<'a>(name: &str, ty: &'a str) -> Option<&'a str> {
+  let rest = ty.strip_prefix(name)?;
+  let rest = rest.strip_prefix('<')?;
+  let rest = rest.strip_suffix('>')?;
+  Some(rest)
+}
+
+/// Split `s` at the first top-level (bracket-depth-zero) comma.
+fn split_top_level_comma(s: &str) -> Option<(&str, &str)> {
+  let mut depth = 0i32;
+  for (i, c) in s.char_indices() {
+    match c {
+      '<' | '(' | '[' => depth += 1,
+      '>' | ')' | ']' => depth -= 1,
+      ',' if depth == 0 => return Some((&s[..i], &s[i + 1..])),
+      _ => {}
+    }
+  }
+  None
 }
 
 pub(crate) fn to_pascal_case(s: &str) -> String {
