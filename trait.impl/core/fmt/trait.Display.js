@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["c2pa_spec",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.95.0/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"c2pa_spec/jumbf_uri/enum.JumbfUriParseError.html\" title=\"enum c2pa_spec::jumbf_uri::JumbfUriParseError\">JumbfUriParseError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.95.0/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"c2pa_spec/urn/enum.UrnParseError.html\" title=\"enum c2pa_spec::urn::UrnParseError\">UrnParseError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.95.0/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"struct\" href=\"c2pa_spec/jumbf_uri/struct.JumbfUri.html\" title=\"struct c2pa_spec::jumbf_uri::JumbfUri\">JumbfUri</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.95.0/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"struct\" href=\"c2pa_spec/urn/struct.Urn.html\" title=\"struct c2pa_spec::urn::Urn\">Urn</a>",0]]],["c2pa_spec_codegen",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.95.0/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"c2pa_spec_codegen/codegen/enum.CodegenError.html\" title=\"enum c2pa_spec_codegen::codegen::CodegenError\">CodegenError</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[1137,324]}

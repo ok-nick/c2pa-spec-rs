@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_GENERATOR_LEN"],"enum":["UrnParseError"],"struct":["Generator","Urn","VersionReason"]};

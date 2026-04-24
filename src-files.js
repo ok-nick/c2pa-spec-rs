@@ -1,0 +1,2 @@
+createSrcSidebar('[["c2pa_spec",["",[],["generated.rs","jumbf_uri.rs","lib.rs","urn.rs","valid_metadata_fields.rs"]]],["c2pa_spec_codegen",["",[],["codegen.rs","main.rs"]]]]');
+//{"start":19,"fragment_lengths":[98,55]}
