@@ -20,37 +20,3 @@ from those live under `c2pa-spec/src/`: `generated.rs` and
 `valid_metadata_fields.rs` are both written by `c2pa-spec-codegen` and
 should not be edited by hand. Everything else in that crate is
 hand-maintained.
-
-## Excluded CDDL files
-
-A few files in `c2pa-spec/schemas/cddl/` don't parse with the `cddl`
-0.10.5 crate and are skipped when building the master schema. See
-[`c2pa-spec/CDDL_ISSUES.md`](./c2pa-spec/CDDL_ISSUES.md) for the
-details. Symbols from those files that other schemas still reference
-(`RegionMap`, `CoseKey`, `CoseSign1`, `CoseSign1Tagged`,
-`ValidationResultsMap`, `StatusMap`, `SemverString`) are aliased to
-`ciborium::Value` (or `String`) stubs in `c2pa-spec/src/lib.rs` so the
-crate still compiles.
-
-## Regenerating
-
-```sh
-cargo run -p c2pa-spec-codegen
-```
-
-Reads the committed CDDL, YAML, and ABNF files under
-`c2pa-spec/schemas/` and writes `c2pa-spec/src/generated.rs`,
-`c2pa-spec/src/valid_metadata_fields.rs`, and
-`c2pa-spec/schemas/cddl/c2pa.cddl`. Pass `--download` to fetch a fresh
-copy of the schemas bundle first:
-
-```sh
-cargo run -p c2pa-spec-codegen -- --download
-```
-
-Point at a different schemas bundle URL with `--url`, or run against a
-different crate root with `--spec-dir PATH`. See
-[`c2pa-spec-codegen/src/main.rs`](./c2pa-spec-codegen/src/main.rs) for
-the codegen details — identifier conversion, socket/plug rule merging,
-literal-to-enum promotion, the `jumbf-uri-type` substitution that swaps
-`String` for `jumbf_uri::JumbfUri`, and so on.
