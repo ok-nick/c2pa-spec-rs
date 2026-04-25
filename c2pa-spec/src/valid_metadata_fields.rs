@@ -99,11 +99,14 @@ pub const PDF: &[&str] = &[
 /// Valid metadata field names in the `Dublin_Core` group.
 pub const DUBLIN_CORE: &[&str] = &[
     "dc:coverage",
+    "dc:created",
     "dc:date",
     "dc:format",
     "dc:identifier",
     "dc:language",
+    "dc:modified",
     "dc:relation",
+    "dc:title",
     "dc:type",
 ];
 

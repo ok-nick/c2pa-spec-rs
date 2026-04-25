@@ -87,7 +87,7 @@ parameters-map = {
 
 $action-reason /= "c2pa.PII.present"
 $action-reason /= "c2pa.invalid.data"
-$action-reason /= "c2pa.tradesecret.present"
+$action-reason /= "c2pa.trade-secret.present"
 $action-reason /= "c2pa.government.confidential"
 $action-reason /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+"
 
@@ -131,6 +131,7 @@ parameters-common-map-v2 = (
 parameters-map-v2 = {
   ? "redacted": $jumbf-uri-type, ; A JUMBF URI to the redacted assertion, required when the action is `c2pa.redacted`
   ? "ingredients": [1* $hashed-uri-map], ; A list of hashed JUMBF URI(s) to the ingredient (v2 or v3) assertion(s) that this action acts on
+  ? "relatedAssertions": [1* $hashed-uri-map], ; hashed JUMBF URI(s) to assertion(s) related to this action that are neither ingredients nor actions
   ? "sourceLanguage": tstr .size (1..max-tstr-length), ; BCP-47 code of the source language of a `c2pa.translated` action
   ? "targetLanguage": tstr .size (1..max-tstr-length), ; BCP-47 code of the target language of a `c2pa.translated` action
   ? "multipleInstances": bool, ; was this action performed multiple times
@@ -209,16 +210,19 @@ alternative-content-representation =
 original-preservation-image-representation = {
   "type": "exif.originalPreservationImage",
   "parameters": original-preservation-image-params
+  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 original-preservation-image-params = {
   ? "multiAssetPartIndex": uint ; The zero-based index of the element within the parts array of the corresponding c2pa.hash.multi-asset assertion that uniquely identifies the location of the OPI.
   ? "embeddedOriginalPreservationImage": hashed-uri-map, ; hashed URI reference to the embedded data assertion containing OPI, or to another assertion that is technically equivalent to an embedded data assertion (e.g., c2pa.thumbnail.claim).
+  * tstr => any ; custom fields
 }
 
 generic-representation = {
   "type": tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+",
   "parameters": { * tstr => any }
+  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 ; ================================================================
@@ -233,6 +237,9 @@ $assertion-metadata-map /= {
   ? "dataSource": source-map, ; A description of the source of the assertion data, selected from a predefined list
   ? "localizations" : [1* localization-data-entry] ; localizations for strings in the assertion
   ? "regionOfInterest" : $region-map ; describes a region of the asset where this assertion is relevant
+  ? "processStart": tdate, ; RFC 3339 date-time when the process began (advisory, not a trusted timestamp)
+  ? "processEnd": tdate, ; RFC 3339 date-time when the process ended (advisory, not a trusted timestamp)
+  * tstr => any ; custom fields
 }
 
 $source-type /= "signer"
@@ -294,8 +301,10 @@ assertion-metadata-assertion = $assertion-metadata-map
 ; ================================================================
 
 ;The asset reference assertion (ARA) describes where a copy of the asset may be obtained.
+;
 asset-ref-map = {
   "references": [1* ara-reference-block-map]
+  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 ara-reference-block-map = {
@@ -315,41 +324,58 @@ ara-reference-uri-map = {
 ; specifically additional context on how to parse or otherwise process it. 
 ; It can also be used to describe externally referenced or related assets such as AI/ML models.
 
-$type-choice /= "c2pa.types.classifier"
-$type-choice /= "c2pa.types.cluster"
-$type-choice /= "c2pa.types.dataset"
-$type-choice /= "c2pa.types.dataset.jax"
-$type-choice /= "c2pa.types.dataset.keras"
-$type-choice /= "c2pa.types.dataset.ml_net"
-$type-choice /= "c2pa.types.dataset.mxnet"
-$type-choice /= "c2pa.types.dataset.onnx"
-$type-choice /= "c2pa.types.dataset.openvino"
-$type-choice /= "c2pa.types.dataset.pytorch"
-$type-choice /= "c2pa.types.dataset.tensorflow"
-$type-choice /= "c2pa.types.format.numpy"
-$type-choice /= "c2pa.types.format.protobuf"
-$type-choice /= "c2pa.types.format.pickle"
-$type-choice /= "c2pa.types.generator"
-$type-choice /= "c2pa.types.generator.prompt"
-$type-choice /= "c2pa.types.generator.seed"
-$type-choice /= "c2pa.types.model"
-$type-choice /= "c2pa.types.model.jax"
-$type-choice /= "c2pa.types.model.keras"
-$type-choice /= "c2pa.types.model.ml_net"
-$type-choice /= "c2pa.types.model.mxnet"
-$type-choice /= "c2pa.types.model.onnx"
-$type-choice /= "c2pa.types.model.openvino"
-$type-choice /= "c2pa.types.model.openvino.parameter"
-$type-choice /= "c2pa.types.model.openvino.topology"
-$type-choice /= "c2pa.types.model.pytorch"
-$type-choice /= "c2pa.types.model.tensorflow"
-$type-choice /= "c2pa.types.regressor"
-$type-choice /= "c2pa.types.tensorflow.hubmodule"
-$type-choice /= "c2pa.types.tensorflow.savedmodel"
-$type-choice /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+"
+$model-type-choice /= "c2pa.types.model"
+$model-type-choice /= "c2pa.types.model.caffe"
+$model-type-choice /= "c2pa.types.model.caffe2"
+$model-type-choice /= "c2pa.types.model.catboost"
+$model-type-choice /= "c2pa.types.model.coreml"
+$model-type-choice /= "c2pa.types.model.flax"
+$model-type-choice /= "c2pa.types.model.huggingface.transformers"
+$model-type-choice /= "c2pa.types.model.jax"
+$model-type-choice /= "c2pa.types.model.keras"
+$model-type-choice /= "c2pa.types.model.lightgbm"
+$model-type-choice /= "c2pa.types.model.ml_net"
+$model-type-choice /= "c2pa.types.model.mxnet"
+$model-type-choice /= "c2pa.types.model.onnx"
+$model-type-choice /= "c2pa.types.model.openvino"
+$model-type-choice /= "c2pa.types.model.openvino.parameter"
+$model-type-choice /= "c2pa.types.model.openvino.topology"
+$model-type-choice /= "c2pa.types.model.paddle"
+$model-type-choice /= "c2pa.types.model.pytorch"
+$model-type-choice /= "c2pa.types.model.sklearn"
+$model-type-choice /= "c2pa.types.model.tensorflow"
+$model-type-choice /= "c2pa.types.model.tensorrt"
+$model-type-choice /= "c2pa.types.model.tflite"
+$model-type-choice /= "c2pa.types.model.torchscript"
+$model-type-choice /= "c2pa.types.model.xgboost"
+
+$asset-type-choice /= "c2pa.types.audit-log"
+$asset-type-choice /= "c2pa.types.classifier"
+$asset-type-choice /= "c2pa.types.cluster"
+$asset-type-choice /= "c2pa.types.dataset"
+$asset-type-choice /= "c2pa.types.dataset.jax"
+$asset-type-choice /= "c2pa.types.dataset.keras"
+$asset-type-choice /= "c2pa.types.dataset.ml_net"
+$asset-type-choice /= "c2pa.types.dataset.mxnet"
+$asset-type-choice /= "c2pa.types.dataset.onnx"
+$asset-type-choice /= "c2pa.types.dataset.openvino"
+$asset-type-choice /= "c2pa.types.dataset.pytorch"
+$asset-type-choice /= "c2pa.types.dataset.tensorflow"
+$asset-type-choice /= "c2pa.types.format.numpy"
+$asset-type-choice /= "c2pa.types.format.protobuf"
+$asset-type-choice /= "c2pa.types.format.pickle"
+$asset-type-choice /= "c2pa.types.generator"
+$asset-type-choice /= "c2pa.types.generator.prompt"
+$asset-type-choice /= "c2pa.types.generator.seed"
+$asset-type-choice /= "c2pa.types.regressor"
+$asset-type-choice /= "c2pa.types.tensorflow.hubmodule"
+$asset-type-choice /= "c2pa.types.tensorflow.savedmodel"
+$asset-type-choice /= "c2pa.types.version-history"
+$asset-type-choice /= $model-type-choice
+$asset-type-choice /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA-Z_-]+"
 
 asset-type-map = {
-  "type": $type-choice, ; one of the listed choices or a custom value
+  "type": $asset-type-choice, ; one of the listed choices or a custom value
   ? "version": semver-string ; The version of the asset type, if applicable. This is a SemVer formatted string.
 }
 
@@ -472,7 +498,7 @@ claim-map = {
   "assertions": [1* $hashed-uri-map],
   "dc:format": tstr, ; media type of the asset
   "instanceID": tstr .size (1..max-tstr-length), ; uniquely identifies a specific version of an asset
-  ? "dc:title": tstr .size (1..max-tstr-length), ; name of the asset,
+  ? "dc:title": tstr .size (1..max-tstr-length), ; name of the asset
   ? "redacted_assertions": [1* jumbf-uri-type], ; List of JUMBF URI references to the assertions of ingredient manifests being redacted
   ? "alg": tstr .size (1..max-tstr-length), ; A string identifying the cryptographic hash algorithm used to compute all data hash assertions listed in this claim unless otherwise overridden, taken from the C2PA data hash algorithm identifier registry. This provides the value for the 'alg' field in data-hash and hashed-uri structures contained in this claim
   ? "alg_soft": tstr .size (1..max-tstr-length), ; A string identifying the algorithm used to compute all soft binding assertions listed in this claim unless otherwise overridden, taken from the C2PA soft binding algorithm identifier registry."
@@ -486,11 +512,11 @@ claim-map-v2 = {
   "signature": jumbf-uri-type, ; JUMBF URI reference to the signature of this claim
   "created_assertions": [1* $hashed-uri-map],
   ? "gathered_assertions": [1* $hashed-uri-map],
-  ? "dc:title": tstr .size (1..max-tstr-length), ; name of the asset,
+  ? "dc:title": tstr .size (1..max-tstr-length), ; name of the asset (metadata assertion preferred)
   ? "redacted_assertions": [1* jumbf-uri-type], ; List of JUMBF URI references to the assertions of ingredient manifests being redacted
   ? "alg": tstr .size (1..max-tstr-length), ; A string identifying the cryptographic hash algorithm used to compute all data hash assertions listed in this claim unless otherwise overridden, taken from the C2PA data hash algorithm identifier registry. This provides the value for the 'alg' field in data-hash and hashed-uri structures contained in this claim
   ? "alg_soft": tstr .size (1..max-tstr-length), ; A string identifying the algorithm used to compute all soft binding assertions listed in this claim unless otherwise overridden, taken from the C2PA soft binding algorithm identifier registry."
-  ? "specVersion": semver-string, ; The version of the specification used to produce this claim (SemVer)
+  ? "specVersion": semver-string, ; (DEPRECATED) The version of the specification used to produce this claim (SemVer)
   ? "metadata": $assertion-metadata-map, ; (DEPRECATED) additional information about the assertion
 }
 
@@ -499,6 +525,7 @@ generator-info-map = {
   ? "version": tstr, ; A human readable string of the product's version    
   ? "icon": $hashed-uri-map / $hashed-ext-uri-map, ; hashed URI to the icon (either embedded or remote)
   ? "operating_system": tstr, ; A human readable string of the operating system the claim generator is running on    
+  ? "specVersion": semver-string, ; The version of the specification used to produce this manifest (SemVer)
   * tstr => any
 }
 
@@ -665,7 +692,18 @@ $sustainability-measurement-method /= tstr .regexp "([\\da-zA-Z_-]+\\.)+[\\da-zA
 
 ; Assertion that references assertion data stored externally by URI (no hash)
 external-reference-map = {
-  "location": unhashed-ext-uri-map,   ; specifies the location and type of the remote data
+  "location": $unhashed-ext-uri-map,   ; specifies the location and type of the remote data
+  ? "label": tstr, ; label for the referenced assertion, if relevant (e.g., c2pa.metadata)
+  ? "description": tstr .size (1..max-tstr-length), ; human-readable description of the referenced data
+  ? "metadata": $assertion-metadata-map,  ; additional information about the assertion
+}
+
+; Assertion that references externally-stored data by hashed URI
+hashed-external-reference-map = {
+  "location": $hashed-ext-uri-map,   ; specifies the location, type and hash of the remote data
+  ? "label": tstr, ; label for the referenced assertion, if relevant (e.g., c2pa.metadata)
+  ? "description": tstr .size (1..max-tstr-length), ; human-readable description of the referenced data
+  ? "metadata": $assertion-metadata-map,  ; additional information about the assertion
 }
 
 ; ================================================================
@@ -728,6 +766,7 @@ font-info-map = {
   ? "designFoundry": font-entity-map, ; The foundry that designed the font.
   ? "sourceFoundry": font-entity-map, ; The foundry that distributes the font.
   ? "identifier": tstr, ; Internal identier of font for foundry or vendor use.
+  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 ; Font Formats
@@ -832,6 +871,7 @@ jumbf-uri-type  /= tstr .regexp "self#jumbf=[\\w\\d\/][\\w\\d\\.\/:-]+[\\w\\d]"
 ; From ingredient.cddl
 ; ================================================================
 
+; (DEPRECATED) Version 1 of the ingredient assertion
 ; Assertion that describes an ingredient used in the asset
 ingredient-map = {
   "dc:title": tstr, ; name of the ingredient
@@ -845,7 +885,7 @@ ingredient-map = {
   ? "metadata": $assertion-metadata-map ; additional information about the assertion
 }
 
-; Version 2 (v2) of the ingredient assertion
+; (DEPRECATED) Version 2 (v2) of the ingredient assertion
 ; Assertion that describes an ingredient used in the asset
 ingredient-map-v2 = {
   "dc:title": tstr, ; name of the ingredient
@@ -880,6 +920,7 @@ ingredient-map-v3 = {
   ? "informationalURI": tstr .size (1..max-tstr-length), ; URI to an informational page about the ingredient or its data
   ? "softBindingsMatched": bool, ; Whether soft bindings were matched
   ? "softBindingAlgorithmsMatched": [1* tstr] ; Array of algorithm names used for discovering the active manifest
+  ? "digitalSourceType": tstr .size (1..max-tstr-length), ; One of the source types defined at https://cv.iptc.org/newscodes/digitalsourcetype/ or in this specification. Cannot be combined with `activeManifest`.
   ? "metadata": $assertion-metadata-map ; additional information about the assertion
 }
 
@@ -1095,6 +1136,7 @@ soft-binding-map = {
   ? "alg-params": bstr, ; (optional) CBOR byte string describing parameters of the soft binding algorithm. 
   ? "bindingMetadata": soft-binding-metadata-map, ; (optional) Additional metadata of the soft binding. Useful for binding-specific information
   ? "url": uri, ; Unused and deprecated. 
+  ? "metadata": $assertion-metadata-map, ; additional information about the assertion
 }
 
 soft-binding-block-map = {
@@ -1182,7 +1224,7 @@ tstToken = {
 ; The data structure used to store a reference to an external URI WITHOUT a hash. 
 ; This might include, for example, http/https reference or URI reference to a smart 
 ; contract under CAIP-10 convention  
-$unhashed-ext-uri-map /= {
+unhashed-ext-uri-map = {
   "url": tstr, ; URI reference
   ? "dc:format": format-string, ; IANA media type of the data
   ? "size": size-type, ; Number of bytes of data

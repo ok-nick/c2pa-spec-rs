@@ -1,3 +1,4 @@
+; (DEPRECATED) Version 1 of the ingredient assertion
 ; Assertion that describes an ingredient used in the asset
 ingredient-map = {
   "dc:title": tstr, ; name of the ingredient
@@ -11,7 +12,7 @@ ingredient-map = {
   ? "metadata": $assertion-metadata-map ; additional information about the assertion
 }
 
-; Version 2 (v2) of the ingredient assertion
+; (DEPRECATED) Version 2 (v2) of the ingredient assertion
 ; Assertion that describes an ingredient used in the asset
 ingredient-map-v2 = {
   "dc:title": tstr, ; name of the ingredient
@@ -46,6 +47,7 @@ ingredient-map-v3 = {
   ? "informationalURI": tstr .size (1..max-tstr-length), ; URI to an informational page about the ingredient or its data
   ? "softBindingsMatched": bool, ; Whether soft bindings were matched
   ? "softBindingAlgorithmsMatched": [1* tstr] ; Array of algorithm names used for discovering the active manifest
+  ? "digitalSourceType": tstr .size (1..max-tstr-length), ; One of the source types defined at https://cv.iptc.org/newscodes/digitalsourcetype/ or in this specification. Cannot be combined with `activeManifest`.
   ? "metadata": $assertion-metadata-map ; additional information about the assertion
 }
 
